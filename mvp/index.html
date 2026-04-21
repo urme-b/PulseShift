@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PulseShift MVP</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%232d6a73'/%3E%3Cpath d='M18 40c6-14 12-20 28-24c-8 10-10 20-6 30c-8-4-14-5-22-6z' fill='%23f6c6a6'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PulseShift MVP</p>
+          <h1>Organizer first climate session retention</h1>
+          <p class="hero-text">
+            Score climate driven suppression risk for a planned session and rank
+            the safest way to preserve meaningful activity.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <p class="hero-panel-label">Version 1 scope</p>
+          <ul class="hero-list">
+            <li>Heat and smoke first</li>
+            <li>Run clubs and outdoor groups</li>
+            <li>Safe action ranking</li>
+          </ul>
+          <div class="db-status">
+            <p class="hero-panel-label">Database</p>
+            <p id="db-state" class="db-value">Checking</p>
+            <p id="db-detail" class="db-copy">Connecting to local SQLite</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel form-panel">
+          <div class="panel-head">
+            <h2>Planned session</h2>
+            <p>Set the conditions the organizer is facing right now.</p>
+          </div>
+
+          <form id="session-form" class="session-form">
+            <div class="field-grid">
+              <label class="field">
+                <span>Session name</span>
+                <input name="sessionName" type="text" value="Tuesday club run" />
+              </label>
+
+              <label class="field">
+                <span>Start time</span>
+                <input name="startTime" type="time" value="18:00" />
+              </label>
+
+              <label class="field">
+                <span>Duration minutes</span>
+                <input
+                  name="durationMinutes"
+                  type="number"
+                  min="15"
+                  max="240"
+                  value="60"
+                />
+              </label>
+
+              <label class="field">
+                <span>Effort level</span>
+                <select name="effortLevel">
+                  <option value="easy">Easy</option>
+                  <option value="moderate" selected>Moderate</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Temperature F</span>
+                <input name="tempF" type="number" min="20" max="130" value="96" />
+              </label>
+
+              <label class="field">
+                <span>Humidity percent</span>
+                <input
+                  name="humidity"
+                  type="number"
+                  min="5"
+                  max="100"
+                  value="62"
+                />
+              </label>
+
+              <label class="field">
+                <span>AQI</span>
+                <input name="aqi" type="number" min="0" max="500" value="92" />
+              </label>
+
+              <label class="field">
+                <span>Smoke alert</span>
+                <select name="smokeAlert">
+                  <option value="no" selected>No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Flexible start window</span>
+                <select name="flexibleStartMinutes">
+                  <option value="0">0 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="60" selected>60 minutes</option>
+                  <option value="90">90 minutes</option>
+                </select>
+              </label>
+            </div>
+
+            <section class="source-panel">
+              <div class="section-head section-head-tight">
+                <h3>Official conditions import</h3>
+              </div>
+              <div class="field-grid">
+                <label class="field">
+                  <span>Latitude</span>
+                  <input
+                    name="latitude"
+                    type="number"
+                    step="0.0001"
+                    value="40.7128"
+                  />
+                </label>
+
+                <label class="field">
+                  <span>Longitude</span>
+                  <input
+                    name="longitude"
+                    type="number"
+                    step="0.0001"
+                    value="-74.0060"
+                  />
+                </label>
+              </div>
+              <div class="source-actions">
+                <button
+                  id="fetch-weather-button"
+                  type="button"
+                  class="secondary-button"
+                >
+                  Pull official conditions
+                </button>
+                <p id="source-status" class="source-copy">
+                  Use official NOAA weather and AirNow AQI to fill conditions.
+                </p>
+              </div>
+            </section>
+
+            <div class="toggle-grid">
+              <label class="toggle">
+                <input name="indoorAvailable" type="checkbox" checked />
+                <span>Indoor option available</span>
+              </label>
+              <label class="toggle">
+                <input name="alternativeRouteAvailable" type="checkbox" checked />
+                <span>Alternative route available</span>
+              </label>
+              <label class="toggle">
+                <input name="shadeAvailable" type="checkbox" checked />
+                <span>Shade friendly route available</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button">Rank actions</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel output-panel">
+          <div class="panel-head">
+            <h2>Decision output</h2>
+            <p>Use one action, one reason, one fallback.</p>
+          </div>
+
+          <div class="summary-grid">
+            <article class="summary-card">
+              <p class="summary-label">Suppression risk</p>
+              <p id="risk-band" class="summary-value">Loading</p>
+              <p id="risk-score" class="summary-detail"></p>
+            </article>
+            <article class="summary-card">
+              <p class="summary-label">Expected minutes kept</p>
+              <p id="expected-minutes" class="summary-value">Loading</p>
+              <p id="heat-smoke" class="summary-detail"></p>
+            </article>
+            <article class="summary-card summary-card-accent">
+              <p class="summary-label">Best action</p>
+              <p id="best-action" class="summary-value">Loading</p>
+              <p id="best-action-detail" class="summary-detail"></p>
+            </article>
+          </div>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Primary recommendation</h3>
+            </div>
+            <div id="top-recommendation" class="recommendation-card"></div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Risk drivers</h3>
+            </div>
+            <ul id="risk-drivers" class="driver-list"></ul>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Action ranking</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Action</th>
+                    <th>Risk</th>
+                    <th>Expected minutes</th>
+                    <th>RAM</th>
+                    <th>Safety</th>
+                  </tr>
+                </thead>
+                <tbody id="ranking-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Recent saved evaluations</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Session</th>
+                    <th>Saved</th>
+                    <th>Risk</th>
+                    <th>Best action</th>
+                    <th>RAM</th>
+                  </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Latest official weather snapshot</h3>
+            </div>
+            <div id="weather-snapshot" class="recommendation-card"></div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Latest official AQI snapshot</h3>
+            </div>
+            <div id="aqi-snapshot" class="recommendation-card"></div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Source stack</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Provider</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Fit</th>
+                  </tr>
+                </thead>
+                <tbody id="sources-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const script = document.createElement("script");
+      script.src =
+        window.location.protocol === "file:"
+          ? "./src/app.bundle.js"
+          : "./src/app.js";
+
+      if (window.location.protocol !== "file:") {
+        script.type = "module";
+      }
+
+      document.body.append(script);
+    </script>
+  </body>
+</html>
