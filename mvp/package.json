@@ -1,0 +1,15 @@
+{
+  "name": "pulse-shift-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "dev:postgres": "PULSESHIFT_DB_DRIVER=postgres PULSESHIFT_POSTGRES_URL=postgresql:///pulseshift node server.js",
+    "serve": "node server.js",
+    "test": "node --test src/airnow.test.js src/engine.test.js src/nws.test.js src/server.test.js"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  }
+}

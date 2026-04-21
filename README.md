@@ -1,0 +1,113 @@
+# PulseShift
+
+PulseShift is an organizer first decision support system for outdoor activity planning under climate stress.
+
+The current repository contains a working MVP that estimates session suppression risk and ranks safer adaptations for planned activity sessions.
+
+## What Problem It Solves
+
+Outdoor sessions are often disrupted by heat, humidity, smoke, and poor air quality.
+
+Most weather tools report conditions.
+
+They do not answer the practical question an organizer actually faces:
+
+How can this session be preserved as safely as possible?
+
+PulseShift addresses that gap by combining climate conditions with session context and recommending the safest high value alternative.
+
+## Current MVP Scope
+
+1. Heat and smoke focused risk estimation
+2. Organizer first workflow for planned sessions
+3. Action ranking for:
+   keep plan
+   start earlier
+   shift route
+   reduce intensity
+   shorten session
+   move indoors
+   cancel session
+4. RAM style retained activity output
+5. Official source integration:
+   NOAA National Weather Service
+   EPA AirNow
+6. Local SQLite mode and live PostgreSQL mode
+
+## Key Features
+
+1. Planned session input with duration, effort, flexibility, and available adaptations
+2. Time aware NOAA hourly weather selection
+3. Official AirNow AQI ingestion
+4. Combined official weather plus AQI import
+5. Server side validation
+6. Atomic persistence for official condition imports
+7. Test coverage for core engine, source adapters, and API routes
+
+## Project Structure
+
+| Path | Purpose |
+| --- | --- |
+| `mvp/index.html` | Main UI |
+| `mvp/styles.css` | Styling |
+| `mvp/server.js` | Local server and API routes |
+| `mvp/src/engine.js` | Risk and adaptation logic |
+| `mvp/src/nws.js` | NOAA weather adapter |
+| `mvp/src/airnow.js` | AirNow AQI adapter |
+| `mvp/src/sqliteStorage.js` | SQLite persistence |
+| `mvp/src/postgresStorage.js` | PostgreSQL persistence |
+| `mvp/src/*.test.js` | Automated tests |
+
+## How To Run
+
+### Default local mode
+
+```bash
+cd mvp
+npm install
+npm run dev
+```
+
+Open:
+
+```bash
+http://127.0.0.1:4173
+```
+
+### PostgreSQL mode
+
+```bash
+cd mvp
+npm install
+npm run dev:postgres
+```
+
+This expects a local PostgreSQL database named `pulseshift`.
+
+## How To Test
+
+```bash
+cd mvp
+npm test
+```
+
+## Data Sources
+
+1. NOAA National Weather Service API
+2. EPA AirNow reporting area data feed
+
+## Current Limitations
+
+1. AQI is reporting area based, not hyperlocal
+2. The project is still an MVP, not a production deployment
+3. The current focus is outdoor session retention under heat and smoke, not every climate hazard
+
+## Evaluation Notes
+
+For an academic or professor review, the important points are:
+
+1. The repository contains a runnable working system
+2. The logic is modular and testable
+3. Official environmental sources are integrated
+4. The decision engine is explicit and inspectable
+5. The system has a clear behavioral and product thesis

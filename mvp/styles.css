@@ -1,0 +1,472 @@
+:root {
+  color-scheme: light;
+  --paper: #f8f1e7;
+  --paper-deep: #efe2cf;
+  --ink: #1d2425;
+  --muted: #526168;
+  --line: rgba(28, 36, 37, 0.12);
+  --accent: #cc5b2f;
+  --accent-soft: #f6c6a6;
+  --accent-cool: #2d6a73;
+  --accent-cool-soft: #cbe5e4;
+  --success: #2a6b42;
+  --warning: #a9531a;
+  --danger: #9f2f24;
+  --shadow: 0 24px 60px rgba(29, 36, 37, 0.12);
+  --radius: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(204, 91, 47, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(45, 106, 115, 0.18), transparent 34%),
+    linear-gradient(180deg, #faf4eb 0%, #f5ebde 100%);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+}
+
+.page-shell {
+  width: min(1280px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr;
+  gap: 20px;
+  padding: 20px 0 28px;
+}
+
+.hero-copy,
+.hero-panel,
+.panel,
+.summary-card,
+.recommendation-card {
+  background: rgba(248, 241, 231, 0.86);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.hero-copy {
+  padding: 28px;
+}
+
+.hero-panel {
+  padding: 28px;
+  align-self: stretch;
+  background: linear-gradient(160deg, rgba(45, 106, 115, 0.94), rgba(35, 70, 76, 0.94));
+  color: #f6f7f2;
+}
+
+.eyebrow,
+.hero-panel-label,
+.summary-label,
+.section-head p,
+.field span {
+  margin: 0 0 12px;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--accent);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  max-width: 12ch;
+  font-size: clamp(2.8rem, 6vw, 4.8rem);
+  line-height: 0.96;
+}
+
+.hero-text {
+  max-width: 54ch;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.hero-list {
+  margin: 18px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 12px;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+.db-status {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.db-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.db-copy {
+  margin-top: 10px;
+  color: rgba(242, 245, 244, 0.82);
+  line-height: 1.5;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.panel {
+  padding: 24px;
+}
+
+.panel-head {
+  margin-bottom: 20px;
+}
+
+.panel-head h2 {
+  font-size: 1.7rem;
+}
+
+.panel-head p {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.session-form {
+  display: grid;
+  gap: 20px;
+}
+
+.source-panel {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(45, 106, 115, 0.08);
+  border: 1px solid rgba(45, 106, 115, 0.14);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid rgba(45, 106, 115, 0.3);
+  border-color: rgba(45, 106, 115, 0.5);
+}
+
+.toggle-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--line);
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.form-actions {
+  display: flex;
+}
+
+.source-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.section-head-tight {
+  margin-bottom: 0;
+}
+
+.primary-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, var(--accent), #e47c4b);
+  color: #fffdf9;
+  cursor: pointer;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.secondary-button {
+  border: 1px solid rgba(45, 106, 115, 0.2);
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--accent-cool);
+  cursor: pointer;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.secondary-button:disabled,
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.source-copy {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summary-card {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.summary-card-accent {
+  background: linear-gradient(160deg, rgba(45, 106, 115, 0.95), rgba(29, 49, 55, 0.95));
+  color: #f2f5f4;
+}
+
+.summary-value {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.summary-detail {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.summary-card-accent .summary-detail,
+.summary-card-accent .summary-label {
+  color: rgba(242, 245, 244, 0.82);
+}
+
+.insight-block {
+  margin-top: 20px;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-head h3 {
+  font-size: 1.22rem;
+}
+
+.recommendation-card {
+  padding: 20px;
+  background: linear-gradient(140deg, rgba(248, 241, 231, 0.96), rgba(255, 255, 255, 0.7));
+}
+
+.recommendation-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recommendation-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chip-low {
+  background: rgba(42, 107, 66, 0.12);
+  color: var(--success);
+}
+
+.chip-moderate {
+  background: rgba(204, 91, 47, 0.12);
+  color: var(--warning);
+}
+
+.chip-high,
+.chip-severe {
+  background: rgba(159, 47, 36, 0.12);
+  color: var(--danger);
+}
+
+.recommendation-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.meta-card {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid var(--line);
+}
+
+.meta-value {
+  margin-top: 6px;
+  font-size: 1.25rem;
+}
+
+.recommendation-copy {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.driver-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.driver-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid var(--line);
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+.driver-value {
+  color: var(--accent-cool);
+  font-weight: 700;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.empty-row td {
+  color: var(--muted);
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+.ranking-table th,
+.ranking-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.ranking-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.safe {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.unsafe {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+@media (max-width: 1040px) {
+  .hero,
+  .workspace,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    width: min(100vw - 20px, 960px);
+    padding-top: 18px;
+  }
+
+  .field-grid,
+  .recommendation-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy,
+  .hero-panel,
+  .panel {
+    padding: 20px;
+  }
+}
