@@ -1,6 +1,6 @@
 .DS_Store
 .archive/
-mvp/node_modules/
-mvp/data/*.sqlite
-mvp/data/*.sqlite-shm
-mvp/data/*.sqlite-wal
+node_modules/
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal

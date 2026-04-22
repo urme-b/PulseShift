@@ -506,7 +506,7 @@ test("storage can switch to a postgres adapter without sqlite", async () => {
               role: "Live hourly forecast and alerts for United States locations",
               freshness: "Operational hourly forecast updates",
               accessModel: "Open data, no key currently required",
-              status: "Active in MVP",
+              status: "Active in current system",
               fitScore: 100,
               url: "https://www.weather.gov/documentation/services-web-api",
               notes: "Best operational fit for United States organizer first decisions"
