@@ -37,8 +37,14 @@ const POSTGRES_SCHEMA_SQL = `
     notes TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS official_condition_imports (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
   CREATE TABLE IF NOT EXISTS weather_snapshots (
     id BIGSERIAL PRIMARY KEY,
+    import_batch_id BIGINT REFERENCES official_condition_imports(id),
     source_key TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
@@ -50,6 +56,7 @@ const POSTGRES_SCHEMA_SQL = `
 
   CREATE TABLE IF NOT EXISTS aqi_snapshots (
     id BIGSERIAL PRIMARY KEY,
+    import_batch_id BIGINT REFERENCES official_condition_imports(id),
     source_key TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
@@ -58,6 +65,12 @@ const POSTGRES_SCHEMA_SQL = `
     payload_json JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  ALTER TABLE weather_snapshots
+    ADD COLUMN IF NOT EXISTS import_batch_id BIGINT REFERENCES official_condition_imports(id);
+
+  ALTER TABLE aqi_snapshots
+    ADD COLUMN IF NOT EXISTS import_batch_id BIGINT REFERENCES official_condition_imports(id);
 `;
 
 async function createPool(postgresUrl) {
@@ -195,17 +208,19 @@ export async function createPostgresStorage({
     async saveWeatherSnapshot(snapshot) {
       const query = `
         INSERT INTO weather_snapshots (
+          import_batch_id,
           source_key,
           latitude,
           longitude,
           city,
           state,
           payload_json
-        ) VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
         RETURNING id
       `;
 
       const response = await activeClient.query(query, [
+        null,
         snapshot.sourceKey,
         snapshot.latitude,
         snapshot.longitude,
@@ -219,17 +234,19 @@ export async function createPostgresStorage({
     async saveAqiSnapshot(snapshot) {
       const query = `
         INSERT INTO aqi_snapshots (
+          import_batch_id,
           source_key,
           latitude,
           longitude,
           reporting_area,
           state,
           payload_json
-        ) VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
         RETURNING id
       `;
 
       const response = await activeClient.query(query, [
+        null,
         snapshot.sourceKey,
         snapshot.latitude,
         snapshot.longitude,
@@ -242,29 +259,36 @@ export async function createPostgresStorage({
     },
     async saveOfficialConditions(weatherSnapshot, aqiSnapshot) {
       return withTransaction(activeClient, async (transaction) => {
+        const importResponse = await transaction.query(
+          "INSERT INTO official_condition_imports DEFAULT VALUES RETURNING id"
+        );
+        const importBatchId = Number(importResponse.rows[0].id);
         const weatherQuery = `
           INSERT INTO weather_snapshots (
+            import_batch_id,
             source_key,
             latitude,
             longitude,
             city,
             state,
             payload_json
-          ) VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
           RETURNING id
         `;
         const aqiQuery = `
           INSERT INTO aqi_snapshots (
+            import_batch_id,
             source_key,
             latitude,
             longitude,
             reporting_area,
             state,
             payload_json
-          ) VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
           RETURNING id
         `;
         const weatherResponse = await transaction.query(weatherQuery, [
+          importBatchId,
           weatherSnapshot.sourceKey,
           weatherSnapshot.latitude,
           weatherSnapshot.longitude,
@@ -273,6 +297,7 @@ export async function createPostgresStorage({
           JSON.stringify(weatherSnapshot.payload)
         ]);
         const aqiResponse = await transaction.query(aqiQuery, [
+          importBatchId,
           aqiSnapshot.sourceKey,
           aqiSnapshot.latitude,
           aqiSnapshot.longitude,
@@ -282,6 +307,7 @@ export async function createPostgresStorage({
         ]);
 
         return {
+          importBatchId,
           weatherSnapshotId: Number(weatherResponse.rows[0].id),
           aqiSnapshotId: Number(aqiResponse.rows[0].id)
         };
@@ -373,6 +399,7 @@ export async function createPostgresStorage({
 
       return {
         ...row,
+        id: Number(row.id),
         createdAtLabel: formatCreatedAt(row.createdAt)
       };
     },
@@ -400,7 +427,72 @@ export async function createPostgresStorage({
 
       return {
         ...row,
+        id: Number(row.id),
         createdAtLabel: formatCreatedAt(row.createdAt)
+      };
+    },
+    async getLatestOfficialConditions() {
+      const query = `
+        SELECT
+          i.id AS "importBatchId",
+          i.created_at AS "createdAt",
+          w.id AS "weatherId",
+          w.source_key AS "weatherSourceKey",
+          w.latitude AS "weatherLatitude",
+          w.longitude AS "weatherLongitude",
+          w.city AS "weatherCity",
+          w.state AS "weatherState",
+          w.payload_json AS "weatherPayload",
+          w.created_at AS "weatherCreatedAt",
+          a.id AS "aqiId",
+          a.source_key AS "aqiSourceKey",
+          a.latitude AS "aqiLatitude",
+          a.longitude AS "aqiLongitude",
+          a.reporting_area AS "aqiReportingArea",
+          a.state AS "aqiState",
+          a.payload_json AS "aqiPayload",
+          a.created_at AS "aqiCreatedAt"
+        FROM official_condition_imports i
+        JOIN weather_snapshots w
+          ON w.import_batch_id = i.id
+        JOIN aqi_snapshots a
+          ON a.import_batch_id = i.id
+        ORDER BY i.id DESC
+        LIMIT 1
+      `;
+      const response = await activeClient.query(query);
+      const row = response.rows[0];
+
+      if (!row) {
+        return null;
+      }
+
+      return {
+        importBatchId: Number(row.importBatchId),
+        createdAt: row.createdAt,
+        createdAtLabel: formatCreatedAt(row.createdAt),
+        weather: {
+          id: Number(row.weatherId),
+          sourceKey: row.weatherSourceKey,
+          latitude: row.weatherLatitude,
+          longitude: row.weatherLongitude,
+          city: row.weatherCity,
+          state: row.weatherState,
+          payload: row.weatherPayload,
+          createdAt: row.weatherCreatedAt,
+          createdAtLabel: formatCreatedAt(row.weatherCreatedAt)
+        },
+        airQuality: {
+          id: Number(row.aqiId),
+          sourceKey: row.aqiSourceKey,
+          latitude: row.aqiLatitude,
+          longitude: row.aqiLongitude,
+          reportingArea: row.aqiReportingArea,
+          state: row.aqiState,
+          payload: row.aqiPayload,
+          createdAt: row.aqiCreatedAt,
+          createdAtLabel: formatCreatedAt(row.aqiCreatedAt)
+        }
       };
     },
     async close() {

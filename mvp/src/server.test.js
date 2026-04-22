@@ -3,17 +3,22 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { DatabaseSync } from "node:sqlite";
 
 import { createAppServer } from "../server.js";
 import { createStorage } from "./db.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, "..");
+
 test("server evaluates sessions and saves them in sqlite", async () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), "pulse-shift-"));
   const dbPath = path.join(tempDir, "test.sqlite");
   const app = createAppServer({
-    rootDir: path.resolve("/Users/urmebose/Documents/P_PulseShift/mvp"),
+    rootDir: ROOT_DIR,
     dbPath
   });
 
@@ -69,6 +74,11 @@ test("server evaluates sessions and saves them in sqlite", async () => {
 
     assert.equal(latestWeather.item, null);
 
+    const latestConditionsResponse = await fetch(`http://127.0.0.1:${port}/api/latest-conditions`);
+    const latestConditions = await latestConditionsResponse.json();
+
+    assert.equal(latestConditions.item, null);
+
     const db = new DatabaseSync(dbPath);
     const count = db.prepare("SELECT COUNT(*) AS total FROM evaluations").get();
     db.close();
@@ -84,7 +94,7 @@ test("server exposes official sources and saves live source snapshots", async ()
   const dbPath = path.join(tempDir, "test.sqlite");
 
   const app = createAppServer({
-    rootDir: path.resolve("/Users/urmebose/Documents/P_PulseShift/mvp"),
+    rootDir: ROOT_DIR,
     dbPath,
     weatherFetcher: async (latitude, longitude, { startTime } = {}) => ({
       sourceKey: "noaa_nws_api",
@@ -193,6 +203,7 @@ test("server exposes official sources and saves live source snapshots", async ()
     });
     const saved = await saveResponse.json();
 
+    assert.equal(typeof saved.importBatchId, "number");
     assert.equal(saved.weatherSnapshotId, 1);
     assert.equal(saved.aqiSnapshotId, 1);
 
@@ -215,6 +226,13 @@ test("server exposes official sources and saves live source snapshots", async ()
     const latestAqi = await latestAqiResponse.json();
 
     assert.equal(latestAqi.item.reportingArea, "New York City");
+
+    const latestConditionsResponse = await fetch(`http://127.0.0.1:${port}/api/latest-conditions`);
+    const latestConditions = await latestConditionsResponse.json();
+
+    assert.equal(latestConditions.item.weather.city, "New York");
+    assert.equal(latestConditions.item.airQuality.reportingArea, "New York City");
+    assert.equal(typeof latestConditions.item.importBatchId, "number");
   } finally {
     await app.stop();
   }
@@ -224,7 +242,7 @@ test("server rejects invalid official weather coordinates", async () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), "pulse-shift-"));
   const dbPath = path.join(tempDir, "test.sqlite");
   const app = createAppServer({
-    rootDir: path.resolve("/Users/urmebose/Documents/P_PulseShift/mvp"),
+    rootDir: ROOT_DIR,
     dbPath
   });
 
@@ -248,7 +266,7 @@ test("server rejects malformed JSON bodies with a 400", async () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), "pulse-shift-"));
   const dbPath = path.join(tempDir, "test.sqlite");
   const app = createAppServer({
-    rootDir: path.resolve("/Users/urmebose/Documents/P_PulseShift/mvp"),
+    rootDir: ROOT_DIR,
     dbPath
   });
 
@@ -267,6 +285,156 @@ test("server rejects malformed JSON bodies with a 400", async () => {
 
     assert.equal(response.status, 400);
     assert.equal(payload.error, "Request body must be valid JSON");
+  } finally {
+    await app.stop();
+  }
+});
+
+test("server accepts coordinate aliases and rejects invalid list limits", async () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), "pulse-shift-"));
+  const dbPath = path.join(tempDir, "test.sqlite");
+
+  const app = createAppServer({
+    rootDir: ROOT_DIR,
+    dbPath,
+    weatherFetcher: async (latitude, longitude, { startTime } = {}) => ({
+      sourceKey: "noaa_nws_api",
+      latitude,
+      longitude,
+      city: "Boston",
+      state: "MA",
+      payload: {
+        point: {
+          forecastOffice: "BOX",
+          gridId: "BOX",
+          gridX: 70,
+          gridY: 76
+        },
+        forecast: {
+          requestedStartTime: startTime,
+          startTime: "2026-04-20T18:00:00-04:00",
+          temperature: 61,
+          temperatureUnit: "F",
+          relativeHumidity: 40,
+          shortForecast: "Clear",
+          windSpeed: "6 mph",
+          windDirection: "W",
+          isDaytime: true
+        }
+      }
+    }),
+    airQualityFetcher: async (latitude, longitude) => ({
+      sourceKey: "epa_airnow",
+      latitude,
+      longitude,
+      reportingArea: "Boston",
+      state: "MA",
+      payload: {
+        lookup: {
+          strategy: "nearest_reporting_area",
+          distanceMiles: 1.4
+        },
+        currentObservation: {
+          aqi: 32,
+          category: "Good",
+          pollutant: "PM2.5",
+          actionDay: false
+        },
+        todayForecast: {
+          aqi: 38,
+          category: "Good",
+          pollutant: "OZONE",
+          actionDay: false
+        },
+        effective: {
+          aqi: 38,
+          category: "Good",
+          smokeAlert: false,
+          decisionBasis: "max_current_observation_or_today_forecast"
+        }
+      }
+    })
+  });
+
+  const address = await app.start(0);
+  const port = address.port;
+
+  try {
+    const aliasGetResponse = await fetch(
+      `http://127.0.0.1:${port}/api/official-weather?latitude=42.3601&longitude=-71.0589&startTime=18:00`
+    );
+    const aliasGetPayload = await aliasGetResponse.json();
+
+    assert.equal(aliasGetResponse.status, 200);
+    assert.equal(aliasGetPayload.snapshot.city, "Boston");
+
+    const aliasPostResponse = await fetch(`http://127.0.0.1:${port}/api/official-conditions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        lat: 42.3601,
+        lon: -71.0589,
+        startTime: "18:00"
+      })
+    });
+    const aliasPostPayload = await aliasPostResponse.json();
+
+    assert.equal(aliasPostResponse.status, 200);
+    assert.equal(typeof aliasPostPayload.importBatchId, "number");
+    assert.equal(aliasPostPayload.weatherSnapshotId, 1);
+    assert.equal(aliasPostPayload.aqiSnapshotId, 1);
+
+    const limitResponse = await fetch(`http://127.0.0.1:${port}/api/evaluations?limit=bad`);
+    const limitPayload = await limitResponse.json();
+
+    assert.equal(limitResponse.status, 400);
+    assert.equal(limitPayload.error, "Limit must be an integer between 1 and 25");
+  } finally {
+    await app.stop();
+  }
+});
+
+test("server rejects invalid persist flags", async () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), "pulse-shift-"));
+  const dbPath = path.join(tempDir, "test.sqlite");
+  const app = createAppServer({
+    rootDir: ROOT_DIR,
+    dbPath
+  });
+
+  const address = await app.start(0);
+  const port = address.port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/evaluate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        persist: "yes",
+        session: {
+          sessionName: "Validation test",
+          startTime: "18:00",
+          durationMinutes: 60,
+          effortLevel: "moderate",
+          tempF: 80,
+          humidity: 45,
+          aqi: 40,
+          smokeAlert: false,
+          flexibleStartMinutes: 30,
+          indoorAvailable: false,
+          alternativeRouteAvailable: true,
+          shadeAvailable: true
+        }
+      })
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 400);
+    assert.equal(payload.error, "Persist must be true or false");
   } finally {
     await app.stop();
   }

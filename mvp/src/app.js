@@ -349,6 +349,11 @@ async function fetchLatestAqiSnapshot() {
   return payload.item;
 }
 
+async function fetchLatestOfficialConditions() {
+  const payload = await requestJson("/api/latest-conditions");
+  return payload.item;
+}
+
 function setWorkingState(button, isWorking, message = DEFAULT_SOURCE_COPY) {
   button.disabled = isWorking;
   sourceStatus.textContent = message;
@@ -406,6 +411,21 @@ function syncOfficialSnapshotViews({
 }
 
 async function loadLatestOfficialConditions() {
+  const combined = await fetchLatestOfficialConditions();
+
+  if (combined) {
+    syncOfficialSnapshotViews({
+      weather: combined.weather,
+      airQuality: combined.airQuality,
+      sourceMessage: "Loaded latest saved official conditions into the session form."
+    });
+
+    return {
+      weather: combined.weather,
+      airQuality: combined.airQuality
+    };
+  }
+
   const [weather, airQuality] = await Promise.all([
     fetchLatestWeatherSnapshot(),
     fetchLatestAqiSnapshot()

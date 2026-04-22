@@ -4,6 +4,14 @@ function badRequest(message) {
   return error;
 }
 
+function assertObject(value, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw badRequest(`${label} must be an object`);
+  }
+
+  return value;
+}
+
 function assertString(value, label, maxLength = 120) {
   const text = String(value || "").trim();
 
@@ -64,28 +72,40 @@ function assertBoolean(value, label) {
   return value;
 }
 
+function pickDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export function validateSessionPayload(input = {}) {
+  const payload = assertObject(input, "Session payload");
+
   return {
-    sessionName: assertString(input.sessionName, "Session name"),
-    startTime: assertStartTime(input.startTime),
-    durationMinutes: assertNumber(input.durationMinutes, "Duration minutes", 15, 240),
-    effortLevel: assertEffortLevel(input.effortLevel),
-    tempF: assertNumber(input.tempF, "Temperature", 20, 130),
-    humidity: assertNumber(input.humidity, "Humidity", 5, 100),
-    aqi: assertNumber(input.aqi, "AQI", 0, 500),
-    smokeAlert: assertBoolean(input.smokeAlert, "Smoke alert"),
+    sessionName: assertString(payload.sessionName, "Session name"),
+    startTime: assertStartTime(payload.startTime),
+    durationMinutes: assertNumber(payload.durationMinutes, "Duration minutes", 15, 240),
+    effortLevel: assertEffortLevel(payload.effortLevel),
+    tempF: assertNumber(payload.tempF, "Temperature", 20, 130),
+    humidity: assertNumber(payload.humidity, "Humidity", 5, 100),
+    aqi: assertNumber(payload.aqi, "AQI", 0, 500),
+    smokeAlert: assertBoolean(payload.smokeAlert, "Smoke alert"),
     flexibleStartMinutes: assertNumber(
-      input.flexibleStartMinutes,
+      payload.flexibleStartMinutes,
       "Flexible start window",
       0,
       180
     ),
-    indoorAvailable: assertBoolean(input.indoorAvailable, "Indoor option"),
+    indoorAvailable: assertBoolean(payload.indoorAvailable, "Indoor option"),
     alternativeRouteAvailable: assertBoolean(
-      input.alternativeRouteAvailable,
+      payload.alternativeRouteAvailable,
       "Alternative route option"
     ),
-    shadeAvailable: assertBoolean(input.shadeAvailable, "Shade option")
+    shadeAvailable: assertBoolean(payload.shadeAvailable, "Shade option")
   };
 }
 
@@ -97,11 +117,39 @@ export function validateCoordinates(latitude, longitude) {
 }
 
 export function validateOfficialImportPayload(input = {}) {
-  const { latitude, longitude } = validateCoordinates(input.latitude, input.longitude);
+  const payload = assertObject(input, "Official import payload");
+  const { latitude, longitude } = validateCoordinates(
+    pickDefined(payload.latitude, payload.lat),
+    pickDefined(payload.longitude, payload.lon)
+  );
 
   return {
     latitude,
     longitude,
-    startTime: input.startTime ? assertStartTime(input.startTime) : null
+    startTime: payload.startTime ? assertStartTime(payload.startTime) : null
   };
+}
+
+export function validateEvaluationRequest(input = {}) {
+  const payload = assertObject(input, "Evaluation payload");
+
+  return {
+    persist:
+      payload.persist === undefined ? true : assertBoolean(payload.persist, "Persist"),
+    session: validateSessionPayload(payload.session)
+  };
+}
+
+export function validateListLimit(value, { defaultValue = 5, max = 25 } = {}) {
+  if (value === null || value === undefined || value === "") {
+    return defaultValue;
+  }
+
+  const limit = Number(value);
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > max) {
+    throw badRequest(`Limit must be an integer between 1 and ${max}`);
+  }
+
+  return limit;
 }

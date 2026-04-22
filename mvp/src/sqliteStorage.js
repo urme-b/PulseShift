@@ -46,8 +46,14 @@ function migrate(db) {
       notes TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS official_condition_imports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS weather_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      import_batch_id INTEGER,
       source_key TEXT NOT NULL,
       latitude REAL NOT NULL,
       longitude REAL NOT NULL,
@@ -59,6 +65,7 @@ function migrate(db) {
 
     CREATE TABLE IF NOT EXISTS aqi_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      import_batch_id INTEGER,
       source_key TEXT NOT NULL,
       latitude REAL NOT NULL,
       longitude REAL NOT NULL,
@@ -68,6 +75,17 @@ function migrate(db) {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  const weatherColumns = db.prepare("PRAGMA table_info(weather_snapshots)").all();
+  const aqiColumns = db.prepare("PRAGMA table_info(aqi_snapshots)").all();
+
+  if (!weatherColumns.some((column) => column.name === "import_batch_id")) {
+    db.exec("ALTER TABLE weather_snapshots ADD COLUMN import_batch_id INTEGER");
+  }
+
+  if (!aqiColumns.some((column) => column.name === "import_batch_id")) {
+    db.exec("ALTER TABLE aqi_snapshots ADD COLUMN import_batch_id INTEGER");
+  }
 }
 
 function seedSources(db) {
@@ -180,31 +198,40 @@ export function createSqliteStorage(filePath) {
 
   const insertWeatherSnapshot = db.prepare(`
     INSERT INTO weather_snapshots (
+      import_batch_id,
       source_key,
       latitude,
       longitude,
       city,
       state,
       payload_json
-    ) VALUES (?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertAqiSnapshot = db.prepare(`
     INSERT INTO aqi_snapshots (
+      import_batch_id,
       source_key,
       latitude,
       longitude,
       reporting_area,
       state,
       payload_json
-    ) VALUES (?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const insertOfficialConditionImport = db.prepare(`
+    INSERT INTO official_condition_imports DEFAULT VALUES
   `);
 
   function saveOfficialConditions(weatherSnapshot, aqiSnapshot) {
     db.exec("BEGIN");
 
     try {
+      const importOutcome = insertOfficialConditionImport.run();
+      const importBatchId = Number(importOutcome.lastInsertRowid);
       const weatherOutcome = insertWeatherSnapshot.run(
+        importBatchId,
         weatherSnapshot.sourceKey,
         weatherSnapshot.latitude,
         weatherSnapshot.longitude,
@@ -213,6 +240,7 @@ export function createSqliteStorage(filePath) {
         JSON.stringify(weatherSnapshot.payload)
       );
       const aqiOutcome = insertAqiSnapshot.run(
+        importBatchId,
         aqiSnapshot.sourceKey,
         aqiSnapshot.latitude,
         aqiSnapshot.longitude,
@@ -224,6 +252,7 @@ export function createSqliteStorage(filePath) {
       db.exec("COMMIT");
 
       return {
+        importBatchId,
         weatherSnapshotId: Number(weatherOutcome.lastInsertRowid),
         aqiSnapshotId: Number(aqiOutcome.lastInsertRowid)
       };
@@ -263,6 +292,63 @@ export function createSqliteStorage(filePath) {
     LIMIT 1
   `);
 
+  const latestOfficialConditions = db.prepare(`
+    SELECT
+      i.id AS importBatchId,
+      i.created_at AS importCreatedAt,
+      w.id AS weatherId,
+      w.source_key AS weatherSourceKey,
+      w.latitude AS weatherLatitude,
+      w.longitude AS weatherLongitude,
+      w.city AS weatherCity,
+      w.state AS weatherState,
+      w.payload_json AS weatherPayloadJson,
+      w.created_at AS weatherCreatedAt,
+      a.id AS aqiId,
+      a.source_key AS aqiSourceKey,
+      a.latitude AS aqiLatitude,
+      a.longitude AS aqiLongitude,
+      a.reporting_area AS aqiReportingArea,
+      a.state AS aqiState,
+      a.payload_json AS aqiPayloadJson,
+      a.created_at AS aqiCreatedAt
+    FROM official_condition_imports i
+    JOIN weather_snapshots w
+      ON w.import_batch_id = i.id
+    JOIN aqi_snapshots a
+      ON a.import_batch_id = i.id
+    ORDER BY i.id DESC
+    LIMIT 1
+  `);
+
+  function mapWeatherSnapshot(row) {
+    return {
+      id: row.id,
+      sourceKey: row.sourceKey,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      city: row.city,
+      state: row.state,
+      payload: JSON.parse(row.payloadJson),
+      createdAt: row.createdAt,
+      createdAtLabel: formatCreatedAt(row.createdAt)
+    };
+  }
+
+  function mapAqiSnapshot(row) {
+    return {
+      id: row.id,
+      sourceKey: row.sourceKey,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      reportingArea: row.reportingArea,
+      state: row.state,
+      payload: JSON.parse(row.payloadJson),
+      createdAt: row.createdAt,
+      createdAtLabel: formatCreatedAt(row.createdAt)
+    };
+  }
+
   return {
     backend: "sqlite",
     connectionLabel: filePath,
@@ -289,6 +375,7 @@ export function createSqliteStorage(filePath) {
     },
     async saveWeatherSnapshot(snapshot) {
       const outcome = insertWeatherSnapshot.run(
+        null,
         snapshot.sourceKey,
         snapshot.latitude,
         snapshot.longitude,
@@ -301,6 +388,7 @@ export function createSqliteStorage(filePath) {
     },
     async saveAqiSnapshot(snapshot) {
       const outcome = insertAqiSnapshot.run(
+        null,
         snapshot.sourceKey,
         snapshot.latitude,
         snapshot.longitude,
@@ -345,13 +433,7 @@ export function createSqliteStorage(filePath) {
         return null;
       }
 
-      const { payloadJson, ...rest } = row;
-
-      return {
-        ...rest,
-        payload: JSON.parse(payloadJson),
-        createdAtLabel: formatCreatedAt(rest.createdAt)
-      };
+      return mapWeatherSnapshot(row);
     },
     async getLatestAqiSnapshot() {
       const row = latestAqiSnapshot.get();
@@ -360,12 +442,39 @@ export function createSqliteStorage(filePath) {
         return null;
       }
 
-      const { payloadJson, ...rest } = row;
+      return mapAqiSnapshot(row);
+    },
+    async getLatestOfficialConditions() {
+      const row = latestOfficialConditions.get();
+
+      if (!row) {
+        return null;
+      }
 
       return {
-        ...rest,
-        payload: JSON.parse(payloadJson),
-        createdAtLabel: formatCreatedAt(rest.createdAt)
+        importBatchId: row.importBatchId,
+        createdAt: row.importCreatedAt,
+        createdAtLabel: formatCreatedAt(row.importCreatedAt),
+        weather: mapWeatherSnapshot({
+          id: row.weatherId,
+          sourceKey: row.weatherSourceKey,
+          latitude: row.weatherLatitude,
+          longitude: row.weatherLongitude,
+          city: row.weatherCity,
+          state: row.weatherState,
+          payloadJson: row.weatherPayloadJson,
+          createdAt: row.weatherCreatedAt
+        }),
+        airQuality: mapAqiSnapshot({
+          id: row.aqiId,
+          sourceKey: row.aqiSourceKey,
+          latitude: row.aqiLatitude,
+          longitude: row.aqiLongitude,
+          reportingArea: row.aqiReportingArea,
+          state: row.aqiState,
+          payloadJson: row.aqiPayloadJson,
+          createdAt: row.aqiCreatedAt
+        })
       };
     },
     async close() {
