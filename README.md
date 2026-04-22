@@ -43,6 +43,7 @@ PulseShift addresses that gap by combining climate conditions with session conte
 5. Server side validation
 6. Atomic persistence for official condition imports
 7. Test coverage for core engine, source adapters, and API routes
+8. Stats layer for evaluation counts, RAM, import volume, and recommendation mix
 
 ## Project Structure
 
@@ -111,3 +112,4 @@ For an academic or professor review, the important points are:
 3. Official environmental sources are integrated
 4. The decision engine is explicit and inspectable
 5. The system has a clear behavioral and product thesis
+6. The stats layer makes recommendation behavior easier to audit

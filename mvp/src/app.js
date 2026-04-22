@@ -12,6 +12,8 @@ const topRecommendation = document.querySelector("#top-recommendation");
 const riskDrivers = document.querySelector("#risk-drivers");
 const rankingBody = document.querySelector("#ranking-body");
 const historyBody = document.querySelector("#history-body");
+const statsSummary = document.querySelector("#stats-summary");
+const statsActionsBody = document.querySelector("#stats-actions-body");
 const sourcesBody = document.querySelector("#sources-body");
 const weatherSnapshot = document.querySelector("#weather-snapshot");
 const aqiSnapshot = document.querySelector("#aqi-snapshot");
@@ -163,6 +165,77 @@ function renderHistory(items) {
   });
 }
 
+function renderStatsSummary(summary) {
+  if (!summary) {
+    statsSummary.innerHTML = `
+      <article class="summary-card">
+        <p class="summary-label">Saved evaluations</p>
+        <p class="summary-value">0</p>
+        <p class="summary-detail">${escapeHtml(SERVER_HINT)}</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">Average RAM</p>
+        <p class="summary-value">0 min</p>
+        <p class="summary-detail">Server stats unavailable</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">High risk share</p>
+        <p class="summary-value">0%</p>
+        <p class="summary-detail">Saved sessions only</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">Official imports</p>
+        <p class="summary-value">0</p>
+        <p class="summary-detail">Combined NOAA and AirNow saves</p>
+      </article>
+    `;
+    return;
+  }
+
+  statsSummary.innerHTML = `
+    <article class="summary-card">
+      <p class="summary-label">Saved evaluations</p>
+      <p class="summary-value">${summary.totalEvaluations}</p>
+      <p class="summary-detail">Total RAM ${summary.totalBestRam} min</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">Average RAM</p>
+      <p class="summary-value">${summary.averageBestRam} min</p>
+      <p class="summary-detail">Average best action gain</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">High risk share</p>
+      <p class="summary-value">${summary.highRiskRate}%</p>
+      <p class="summary-detail">Avg risk ${summary.averageBaselineRiskScore}</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">Official imports</p>
+      <p class="summary-value">${summary.totalOfficialImports}</p>
+      <p class="summary-detail">Saved combined source pulls</p>
+    </article>
+  `;
+}
+
+function renderRecommendationStats(items) {
+  if (!items.length) {
+    renderEmptyRow(statsActionsBody, 4, "No saved recommendation stats yet");
+    return;
+  }
+
+  statsActionsBody.replaceChildren();
+
+  items.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${escapeHtml(item.actionLabel)}</td>
+      <td>${item.total}</td>
+      <td>${item.sharePercent}%</td>
+      <td>${item.averageRam}</td>
+    `;
+    statsActionsBody.append(row);
+  });
+}
+
 function renderSources(items) {
   if (!items.length) {
     renderEmptyRow(sourcesBody, 5, "No source catalog available");
@@ -305,6 +378,8 @@ function setOfflineState(reason) {
   fetchWeatherButton.disabled = true;
   sourceStatus.textContent = `Official data import unavailable. ${SERVER_HINT}`;
   renderHistory([]);
+  renderStatsSummary(null);
+  renderRecommendationStats([]);
   renderSources(
     OFFICIAL_SOURCES.map((item) => ({
       sourceKey: item.key,
@@ -337,6 +412,16 @@ async function loadHistory() {
 async function loadSources() {
   const payload = await requestJson("/api/sources");
   renderSources(payload.items);
+}
+
+async function loadStats() {
+  const [summaryPayload, recommendationPayload] = await Promise.all([
+    requestJson("/api/stats/summary"),
+    requestJson("/api/stats/recommendations")
+  ]);
+
+  renderStatsSummary(summaryPayload.item);
+  renderRecommendationStats(recommendationPayload.items);
 }
 
 async function fetchLatestWeatherSnapshot() {
@@ -479,7 +564,7 @@ async function evaluateSession({ persist }) {
   renderDecision(payload.result);
 
   if (persist) {
-    await Promise.all([loadDatabaseStatus(), loadHistory()]);
+    await Promise.all([loadDatabaseStatus(), loadHistory(), loadStats()]);
   }
 }
 
@@ -509,7 +594,7 @@ async function fetchOfficialConditions() {
         `Loaded official NOAA weather for ${payload.conditions.weather.city || "unknown city"}, ${payload.conditions.weather.state || ""} and AirNow AQI for ${payload.conditions.airQuality.reportingArea || "unknown area"}`.trim()
     });
 
-    await Promise.all([loadDatabaseStatus(), evaluateSession({ persist: false })]);
+    await Promise.all([loadDatabaseStatus(), loadStats(), evaluateSession({ persist: false })]);
   } catch (error) {
     sourceStatus.textContent = error.message;
   } finally {
@@ -519,7 +604,13 @@ async function fetchOfficialConditions() {
 
 async function initializeLiveData() {
   sourceStatus.textContent = DEFAULT_SOURCE_COPY;
-  await Promise.all([loadDatabaseStatus(), loadHistory(), loadSources(), loadLatestOfficialConditions()]);
+  await Promise.all([
+    loadDatabaseStatus(),
+    loadHistory(),
+    loadStats(),
+    loadSources(),
+    loadLatestOfficialConditions()
+  ]);
 }
 
 async function initializeApp() {
