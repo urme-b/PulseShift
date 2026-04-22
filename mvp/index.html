@@ -255,6 +255,57 @@
 
           <section class="insight-block">
             <div class="section-head">
+              <h3>System stats</h3>
+            </div>
+            <div id="stats-summary" class="stats-grid">
+              <article class="summary-card">
+                <p class="summary-label">Saved evaluations</p>
+                <p class="summary-value">0</p>
+                <p class="summary-detail">Open the local server to load stats</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">Average RAM</p>
+                <p class="summary-value">0 min</p>
+                <p class="summary-detail">No saved evaluation stats yet</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">High risk share</p>
+                <p class="summary-value">0%</p>
+                <p class="summary-detail">Saved sessions only</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">Official imports</p>
+                <p class="summary-value">0</p>
+                <p class="summary-detail">Combined NOAA and AirNow saves</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
+              <h3>Recommendation mix</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>Best action</th>
+                    <th>Count</th>
+                    <th>Share</th>
+                    <th>Avg RAM</th>
+                  </tr>
+                </thead>
+                <tbody id="stats-actions-body">
+                  <tr class="empty-row">
+                    <td colspan="4">Open the local server to load recommendation stats</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
               <h3>Latest official weather snapshot</h3>
             </div>
             <div id="weather-snapshot" class="recommendation-card"></div>

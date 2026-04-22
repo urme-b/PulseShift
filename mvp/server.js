@@ -137,6 +137,20 @@ export function createAppServer({
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/stats/summary") {
+        sendJson(response, 200, {
+          item: await database.getStatsSummary()
+        });
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/stats/recommendations") {
+        sendJson(response, 200, {
+          items: await database.listRecommendationStats()
+        });
+        return;
+      }
+
       if (request.method === "GET" && url.pathname === "/api/latest-weather") {
         sendJson(response, 200, {
           item: await database.getLatestWeatherSnapshot()
