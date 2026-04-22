@@ -7,7 +7,7 @@
       role: "Live hourly forecast and alerts for United States locations",
       freshness: "Operational hourly forecast updates",
       accessModel: "Open data, no key currently required",
-      status: "Active in MVP",
+      status: "Active in current system",
       fitScore: 100,
       url: "https://www.weather.gov/documentation/services-web-api",
       notes: "Best operational fit for United States organizer first decisions"
@@ -31,7 +31,7 @@
       role: "Current and forecast AQI for reporting areas",
       freshness: "Near real time and forecast",
       accessModel: "Public reporting area file feed",
-      status: "Active in MVP",
+      status: "Active in current system",
       fitScore: 93,
       url: "https://s3-us-west-1.amazonaws.com/files.airnowtech.org/airnow/docs/ReportingAreaFactSheet.pdf",
       notes: "Using the official reporting area feed for key free AQI import"
