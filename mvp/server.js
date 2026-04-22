@@ -8,8 +8,9 @@ import { createStorage } from "./src/db.js";
 import { rankAdaptations } from "./src/engine.js";
 import { fetchOfficialWeatherSnapshot } from "./src/nws.js";
 import {
-  validateOfficialImportPayload,
-  validateSessionPayload
+  validateEvaluationRequest,
+  validateListLimit,
+  validateOfficialImportPayload
 } from "./src/validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,8 +64,10 @@ async function readBody(request) {
 
 function officialImportFromQuery(url) {
   return validateOfficialImportPayload({
-    latitude: url.searchParams.get("lat"),
-    longitude: url.searchParams.get("lon"),
+    latitude: url.searchParams.get("latitude"),
+    longitude: url.searchParams.get("longitude"),
+    lat: url.searchParams.get("lat"),
+    lon: url.searchParams.get("lon"),
     startTime: url.searchParams.get("startTime") || null
   });
 }
@@ -127,9 +130,9 @@ export function createAppServer({
       }
 
       if (request.method === "GET" && url.pathname === "/api/evaluations") {
-        const limit = Number(url.searchParams.get("limit")) || 5;
+        const limit = validateListLimit(url.searchParams.get("limit"));
         sendJson(response, 200, {
-          items: await database.listRecent(Math.min(limit, 25))
+          items: await database.listRecent(limit)
         });
         return;
       }
@@ -144,6 +147,13 @@ export function createAppServer({
       if (request.method === "GET" && url.pathname === "/api/latest-aqi") {
         sendJson(response, 200, {
           item: await database.getLatestAqiSnapshot()
+        });
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/latest-conditions") {
+        sendJson(response, 200, {
+          item: await database.getLatestOfficialConditions()
         });
         return;
       }
@@ -229,12 +239,14 @@ export function createAppServer({
           }),
           airQualityFetcher(payload.latitude, payload.longitude)
         ]);
-        const { weatherSnapshotId, aqiSnapshotId } = await database.saveOfficialConditions(
+        const { importBatchId, weatherSnapshotId, aqiSnapshotId } =
+          await database.saveOfficialConditions(
           weatherSnapshot,
           aqiSnapshot
-        );
+          );
 
         sendJson(response, 200, {
+          importBatchId,
           weatherSnapshotId,
           aqiSnapshotId,
           conditions: {
@@ -246,9 +258,8 @@ export function createAppServer({
       }
 
       if (request.method === "POST" && url.pathname === "/api/evaluate") {
-        const payload = await readBody(request);
-        const session = validateSessionPayload(payload.session || {});
-        const persist = payload.persist !== false;
+        const payload = validateEvaluationRequest(await readBody(request));
+        const { session, persist } = payload;
         const result = rankAdaptations(session);
         const savedRecord = persist ? await database.saveEvaluation(session, result) : null;
 
