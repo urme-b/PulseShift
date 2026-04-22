@@ -2,7 +2,7 @@
 
 PulseShift is an organizer first decision support system for outdoor activity planning under climate stress.
 
-The current repository contains a working MVP that estimates session suppression risk and ranks safer adaptations for planned activity sessions.
+The repository contains a working application that estimates session suppression risk and ranks safer adaptations for planned activity sessions.
 
 ## What Problem It Solves
 
@@ -16,7 +16,7 @@ How can this session be preserved as safely as possible?
 
 PulseShift addresses that gap by combining climate conditions with session context and recommending the safest high value alternative.
 
-## Current MVP Scope
+## Current System Scope
 
 1. Heat and smoke focused risk estimation
 2. Organizer first workflow for planned sessions
@@ -49,22 +49,21 @@ PulseShift addresses that gap by combining climate conditions with session conte
 
 | Path | Purpose |
 | --- | --- |
-| `mvp/index.html` | Main UI |
-| `mvp/styles.css` | Styling |
-| `mvp/server.js` | Local server and API routes |
-| `mvp/src/engine.js` | Risk and adaptation logic |
-| `mvp/src/nws.js` | NOAA weather adapter |
-| `mvp/src/airnow.js` | AirNow AQI adapter |
-| `mvp/src/sqliteStorage.js` | SQLite persistence |
-| `mvp/src/postgresStorage.js` | PostgreSQL persistence |
-| `mvp/src/*.test.js` | Automated tests |
+| `index.html` | Main UI |
+| `styles.css` | Styling |
+| `server.js` | Local server and API routes |
+| `src/engine.js` | Risk and adaptation logic |
+| `src/nws.js` | NOAA weather adapter |
+| `src/airnow.js` | AirNow AQI adapter |
+| `src/sqliteStorage.js` | SQLite persistence |
+| `src/postgresStorage.js` | PostgreSQL persistence |
+| `src/*.test.js` | Automated tests |
 
 ## How To Run
 
 ### Default local mode
 
 ```bash
-cd mvp
 npm install
 npm run dev
 ```
@@ -78,7 +77,6 @@ http://127.0.0.1:4173
 ### PostgreSQL mode
 
 ```bash
-cd mvp
 npm install
 npm run dev:postgres
 ```
@@ -88,7 +86,6 @@ This expects a local PostgreSQL database named `pulseshift`.
 ## How To Test
 
 ```bash
-cd mvp
 npm test
 ```
 
@@ -100,7 +97,7 @@ npm test
 ## Current Limitations
 
 1. AQI is reporting area based, not hyperlocal
-2. The project is still an MVP, not a production deployment
+2. The project is still an academic prototype, not a production deployment
 3. The current focus is outdoor session retention under heat and smoke, not every climate hazard
 
 ## Evaluation Notes

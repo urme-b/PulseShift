@@ -1,5 +1,5 @@
 const USER_AGENT =
-  "PulseShiftMVP/0.1 (local verification, urmebose1996@gmail.com)";
+  "PulseShift/0.1 (local verification, urmebose1996@gmail.com)";
 
 function assertCoordinate(value, label) {
   const numeric = Number(value);
