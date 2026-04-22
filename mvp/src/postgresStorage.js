@@ -375,6 +375,67 @@ export async function createPostgresStorage({
       const response = await activeClient.query(query);
       return response.rows;
     },
+    async getStatsSummary() {
+      const query = `
+        SELECT
+          COUNT(*)::int AS "totalEvaluations",
+          ROUND(COALESCE(AVG(baseline_risk_score), 0)::numeric, 1) AS "averageBaselineRiskScore",
+          COALESCE(SUM(CASE WHEN baseline_risk_band = 'High' THEN 1 ELSE 0 END), 0)::int AS "highRiskEvaluations",
+          ROUND(COALESCE(AVG(best_ram), 0)::numeric, 1) AS "averageBestRam",
+          COALESCE(SUM(best_ram), 0)::int AS "totalBestRam"
+        FROM evaluations
+      `;
+      const importsQuery = `
+        SELECT COUNT(*)::int AS total
+        FROM official_condition_imports
+      `;
+      const [summaryResponse, importsResponse] = await Promise.all([
+        activeClient.query(query),
+        activeClient.query(importsQuery)
+      ]);
+      const summary = summaryResponse.rows[0];
+      const totalEvaluations = Number(summary.totalEvaluations);
+      const highRiskEvaluations = Number(summary.highRiskEvaluations);
+
+      return {
+        totalEvaluations,
+        averageBaselineRiskScore: Number(summary.averageBaselineRiskScore),
+        highRiskEvaluations,
+        highRiskRate:
+          totalEvaluations === 0
+            ? 0
+            : Math.round((highRiskEvaluations / totalEvaluations) * 1000) / 10,
+        averageBestRam: Number(summary.averageBestRam),
+        totalBestRam: Number(summary.totalBestRam),
+        totalOfficialImports: Number(importsResponse.rows[0].total)
+      };
+    },
+    async listRecommendationStats() {
+      const query = `
+        SELECT
+          best_action AS "actionLabel",
+          COUNT(*)::int AS total,
+          ROUND(COALESCE(AVG(best_ram), 0)::numeric, 1) AS "averageRam"
+        FROM evaluations
+        GROUP BY best_action
+        ORDER BY total DESC, "actionLabel" ASC
+      `;
+      const totalResponse = await activeClient.query(
+        "SELECT COUNT(*)::int AS total FROM evaluations"
+      );
+      const totalEvaluations = Number(totalResponse.rows[0].total);
+      const response = await activeClient.query(query);
+
+      return response.rows.map((item) => ({
+        actionLabel: item.actionLabel,
+        total: Number(item.total),
+        sharePercent:
+          totalEvaluations === 0
+            ? 0
+            : Math.round((Number(item.total) / totalEvaluations) * 1000) / 10,
+        averageRam: Number(item.averageRam)
+      }));
+    },
     async getLatestWeatherSnapshot() {
       const query = `
         SELECT

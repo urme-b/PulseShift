@@ -69,6 +69,22 @@ test("server evaluates sessions and saves them in sqlite", async () => {
     assert.equal(list.items.length, 1);
     assert.equal(list.items[0].sessionName, "Thursday heat test");
 
+    const summaryResponse = await fetch(`http://127.0.0.1:${port}/api/stats/summary`);
+    const summary = await summaryResponse.json();
+
+    assert.equal(summary.item.totalEvaluations, 1);
+    assert.equal(summary.item.totalOfficialImports, 0);
+    assert.equal(summary.item.totalBestRam, evaluation.savedRecord.bestRam);
+
+    const recommendationStatsResponse = await fetch(
+      `http://127.0.0.1:${port}/api/stats/recommendations`
+    );
+    const recommendationStats = await recommendationStatsResponse.json();
+
+    assert.equal(recommendationStats.items.length, 1);
+    assert.equal(recommendationStats.items[0].actionLabel, evaluation.savedRecord.bestAction);
+    assert.equal(recommendationStats.items[0].total, 1);
+
     const latestWeatherResponse = await fetch(`http://127.0.0.1:${port}/api/latest-weather`);
     const latestWeather = await latestWeatherResponse.json();
 
@@ -233,6 +249,19 @@ test("server exposes official sources and saves live source snapshots", async ()
     assert.equal(latestConditions.item.weather.city, "New York");
     assert.equal(latestConditions.item.airQuality.reportingArea, "New York City");
     assert.equal(typeof latestConditions.item.importBatchId, "number");
+
+    const summaryResponse = await fetch(`http://127.0.0.1:${port}/api/stats/summary`);
+    const summary = await summaryResponse.json();
+
+    assert.equal(summary.item.totalEvaluations, 0);
+    assert.equal(summary.item.totalOfficialImports, 1);
+
+    const recommendationStatsResponse = await fetch(
+      `http://127.0.0.1:${port}/api/stats/recommendations`
+    );
+    const recommendationStats = await recommendationStatsResponse.json();
+
+    assert.equal(recommendationStats.items.length, 0);
   } finally {
     await app.stop();
   }

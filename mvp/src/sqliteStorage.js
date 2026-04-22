@@ -165,6 +165,11 @@ export function createSqliteStorage(filePath) {
     FROM aqi_snapshots
   `);
 
+  const countOfficialConditionImports = db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM official_condition_imports
+  `);
+
   const listEvaluations = db.prepare(`
     SELECT
       id,
@@ -194,6 +199,26 @@ export function createSqliteStorage(filePath) {
       notes
     FROM source_catalog
     ORDER BY fit_score DESC, name ASC
+  `);
+
+  const summaryStats = db.prepare(`
+    SELECT
+      COUNT(*) AS totalEvaluations,
+      ROUND(COALESCE(AVG(baseline_risk_score), 0), 1) AS averageBaselineRiskScore,
+      COALESCE(SUM(CASE WHEN baseline_risk_band = 'High' THEN 1 ELSE 0 END), 0) AS highRiskEvaluations,
+      ROUND(COALESCE(AVG(best_ram), 0), 1) AS averageBestRam,
+      COALESCE(SUM(best_ram), 0) AS totalBestRam
+    FROM evaluations
+  `);
+
+  const recommendationStats = db.prepare(`
+    SELECT
+      best_action AS actionLabel,
+      COUNT(*) AS total,
+      ROUND(COALESCE(AVG(best_ram), 0), 1) AS averageRam
+    FROM evaluations
+    GROUP BY best_action
+    ORDER BY total DESC, actionLabel ASC
   `);
 
   const insertWeatherSnapshot = db.prepare(`
@@ -425,6 +450,38 @@ export function createSqliteStorage(filePath) {
     },
     async listSources() {
       return listSources.all();
+    },
+    async getStatsSummary() {
+      const summary = summaryStats.get();
+      const importRow = countOfficialConditionImports.get();
+      const totalEvaluations = Number(summary.totalEvaluations);
+      const highRiskEvaluations = Number(summary.highRiskEvaluations);
+
+      return {
+        totalEvaluations,
+        averageBaselineRiskScore: Number(summary.averageBaselineRiskScore),
+        highRiskEvaluations,
+        highRiskRate:
+          totalEvaluations === 0
+            ? 0
+            : Math.round((highRiskEvaluations / totalEvaluations) * 1000) / 10,
+        averageBestRam: Number(summary.averageBestRam),
+        totalBestRam: Number(summary.totalBestRam),
+        totalOfficialImports: Number(importRow.total)
+      };
+    },
+    async listRecommendationStats() {
+      const totalEvaluations = Number(summaryStats.get().totalEvaluations);
+
+      return recommendationStats.all().map((item) => ({
+        actionLabel: item.actionLabel,
+        total: Number(item.total),
+        sharePercent:
+          totalEvaluations === 0
+            ? 0
+            : Math.round((Number(item.total) / totalEvaluations) * 1000) / 10,
+        averageRam: Number(item.averageRam)
+      }));
     },
     async getLatestWeatherSnapshot() {
       const row = latestWeatherSnapshot.get();
