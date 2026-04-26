@@ -1,5 +1,7 @@
 # PulseShift
 
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/urme-b/PulseShift)
+
 PulseShift is an organizer first decision support system for outdoor activity planning under climate stress.
 
 The repository contains a working application that estimates session suppression risk and ranks safer adaptations for planned activity sessions.
@@ -44,6 +46,7 @@ PulseShift addresses that gap by combining climate conditions with session conte
 6. Atomic persistence for official condition imports
 7. Test coverage for core engine, source adapters, and API routes
 8. Stats layer for evaluation counts, RAM, import volume, and recommendation mix
+9. Clean dataset exports for saved evaluations and official condition imports
 
 ## Project Structure
 
@@ -52,6 +55,7 @@ PulseShift addresses that gap by combining climate conditions with session conte
 | `index.html` | Main UI |
 | `styles.css` | Styling |
 | `server.js` | Local server and API routes |
+| `src/datasets.js` | Clean dataset definitions and CSV export helpers |
 | `src/engine.js` | Risk and adaptation logic |
 | `src/nws.js` | NOAA weather adapter |
 | `src/airnow.js` | AirNow AQI adapter |
@@ -94,11 +98,18 @@ npm test
 1. NOAA National Weather Service API
 2. EPA AirNow reporting area data feed
 
+## Dataset Layer
+
+1. `GET /api/datasets/summary` returns row counts, time coverage, and column definitions
+2. `GET /api/datasets/evaluations.csv` exports a clean session level evaluation table
+3. `GET /api/datasets/official-conditions.csv` exports a clean official import table for NOAA weather and AirNow AQI
+
 ## Current Limitations
 
 1. AQI is reporting area based, not hyperlocal
 2. The project is still an academic prototype, not a production deployment
 3. The current focus is outdoor session retention under heat and smoke, not every climate hazard
+4. Evaluations and official condition imports are exported as separate clean tables because the current schema does not yet link each evaluation to a specific import batch
 
 ## Evaluation Notes
 
@@ -110,3 +121,4 @@ For an academic or professor review, the important points are:
 4. The decision engine is explicit and inspectable
 5. The system has a clear behavioral and product thesis
 6. The stats layer makes recommendation behavior easier to audit
+7. The dataset layer makes the stored evidence exportable for downstream analysis
