@@ -1,6 +1,6 @@
 # PulseShift
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/urme-b/PulseShift)
+**[Live Demo →](https://urme-b.github.io/PulseShift/)**
 
 PulseShift is an organizer first decision support system for outdoor activity planning under climate stress.
 
