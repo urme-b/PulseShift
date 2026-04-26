@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: pulseshift
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
