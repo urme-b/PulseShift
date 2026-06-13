@@ -36,6 +36,7 @@ TEST_YEAR = 2024
 SHIFT_WINDOW_H = 3           # hours either side for a time shift
 HEAT_UNSAFE_F = 103.0        # heat index severe threshold
 AQI_UNSAFE = 150             # unhealthy boundary
+MIN_RISK_BENEFIT = 0.05      # only shift when it meaningfully lowers risk
 MEAN_RIDE_MIN = 13.0         # Capital Bikeshare typical ride length
 
 

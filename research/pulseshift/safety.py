@@ -5,10 +5,9 @@ import numpy as np
 from . import config
 
 
-def audit(reco):
+def audit(reco, risk_col="risk"):
     shifts = reco[reco["action"] == "shift"]
-    heat_delta = shifts["target_heat_index_f"] - shifts["heat_index_f"]
-    aqi_delta = shifts["target_aqi"] - shifts["aqi"]
+    risk_drop = shifts[risk_col] - shifts["chosen_risk"]
 
     unsafe_target = (
         (reco["action"] != "cancel")
@@ -21,9 +20,6 @@ def audit(reco):
         "n_shifts": int(len(shifts)),
         "n_cancel": int((reco["action"] == "cancel").sum()),
         "unsafe_recommendations": int(unsafe_target.sum()),
-        "max_heat_increase": float(heat_delta.max()) if len(shifts) else 0.0,
-        "max_aqi_increase": float(aqi_delta.max()) if len(shifts) else 0.0,
-        "mean_heat_reduction": float(-heat_delta.mean()) if len(shifts) else 0.0,
-        "mean_aqi_reduction": float(-aqi_delta.mean()) if len(shifts) else 0.0,
+        "mean_risk_reduction": float(risk_drop.mean()) if len(shifts) else 0.0,
         "all_safe": bool(unsafe_target.sum() == 0),
     }
