@@ -54,6 +54,24 @@
       "cal_intercept": -0.7843057257006686
     }
   ],
+  "calibrated_ci": {
+    "auroc": [
+      0.878,
+      0.907
+    ],
+    "auprc": [
+      0.352,
+      0.445
+    ],
+    "brier": [
+      0.038,
+      0.043
+    ],
+    "ece": [
+      0.036,
+      0.044
+    ]
+  },
   "ram": {
     "recovered_rides": 150086.90438571066,
     "recovered_minutes": 1951129.7570142385,
@@ -64,6 +82,10 @@
     "n_shifts": 1695,
     "distinct_target_slots": 1165
   },
+  "ram_pct_ci": [
+    0.346,
+    0.4
+  ],
   "safety": {
     "n_shifts": 1695,
     "n_cancel": 5,
