@@ -85,6 +85,30 @@ test("server evaluates sessions and saves them in sqlite", async () => {
     assert.equal(recommendationStats.items[0].actionLabel, evaluation.savedRecord.bestAction);
     assert.equal(recommendationStats.items[0].total, 1);
 
+    const datasetSummaryResponse = await fetch(
+      `http://127.0.0.1:${port}/api/datasets/summary`
+    );
+    const datasetSummary = await datasetSummaryResponse.json();
+
+    assert.equal(datasetSummary.item.evaluations.rowCount, 1);
+    assert.equal(datasetSummary.item.officialConditions.rowCount, 0);
+    assert.equal(
+      datasetSummary.item.evaluations.columns.includes("sessionName"),
+      true
+    );
+
+    const evaluationDatasetResponse = await fetch(
+      `http://127.0.0.1:${port}/api/datasets/evaluations.csv`
+    );
+    const evaluationDatasetCsv = await evaluationDatasetResponse.text();
+
+    assert.equal(
+      evaluationDatasetResponse.headers.get("content-type"),
+      "text/csv; charset=utf-8"
+    );
+    assert.match(evaluationDatasetCsv, /^evaluationId,createdAt,sessionName,/);
+    assert.match(evaluationDatasetCsv, /Thursday heat test/);
+
     const latestWeatherResponse = await fetch(`http://127.0.0.1:${port}/api/latest-weather`);
     const latestWeather = await latestWeatherResponse.json();
 
@@ -262,6 +286,31 @@ test("server exposes official sources and saves live source snapshots", async ()
     const recommendationStats = await recommendationStatsResponse.json();
 
     assert.equal(recommendationStats.items.length, 0);
+
+    const datasetSummaryResponse = await fetch(
+      `http://127.0.0.1:${port}/api/datasets/summary`
+    );
+    const datasetSummary = await datasetSummaryResponse.json();
+
+    assert.equal(datasetSummary.item.evaluations.rowCount, 0);
+    assert.equal(datasetSummary.item.officialConditions.rowCount, 1);
+    assert.equal(
+      datasetSummary.item.officialConditions.columns.includes("reportingArea"),
+      true
+    );
+
+    const officialDatasetResponse = await fetch(
+      `http://127.0.0.1:${port}/api/datasets/official-conditions.csv`
+    );
+    const officialDatasetCsv = await officialDatasetResponse.text();
+
+    assert.equal(
+      officialDatasetResponse.headers.get("content-type"),
+      "text/csv; charset=utf-8"
+    );
+    assert.match(officialDatasetCsv, /^importBatchId,importedAt,latitude,/);
+    assert.match(officialDatasetCsv, /New York City/);
+    assert.match(officialDatasetCsv, /nearest-reporting-area/);
   } finally {
     await app.stop();
   }

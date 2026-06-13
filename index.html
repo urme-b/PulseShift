@@ -306,6 +306,52 @@
 
           <section class="insight-block">
             <div class="section-head">
+              <h3>Dataset layer</h3>
+            </div>
+            <div id="dataset-summary" class="stats-grid">
+              <article class="summary-card">
+                <p class="summary-label">Evaluation rows</p>
+                <p class="summary-value">0</p>
+                <p class="summary-detail">Open the local server to load clean dataset exports</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">Official condition rows</p>
+                <p class="summary-value">0</p>
+                <p class="summary-detail">Combined NOAA and AirNow import batches</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">Evaluation columns</p>
+                <p class="summary-value">21</p>
+                <p class="summary-detail">Analysis ready session features and outputs</p>
+              </article>
+              <article class="summary-card">
+                <p class="summary-label">Condition columns</p>
+                <p class="summary-value">28</p>
+                <p class="summary-detail">Forecast and AQI fields in one clean table</p>
+              </article>
+            </div>
+            <div class="dataset-actions">
+              <a
+                id="evaluation-export-link"
+                class="secondary-button button-link button-link-disabled"
+                href="#"
+                aria-disabled="true"
+              >
+                Download evaluations CSV
+              </a>
+              <a
+                id="conditions-export-link"
+                class="secondary-button button-link button-link-disabled"
+                href="#"
+                aria-disabled="true"
+              >
+                Download official conditions CSV
+              </a>
+            </div>
+          </section>
+
+          <section class="insight-block">
+            <div class="section-head">
               <h3>Latest official weather snapshot</h3>
             </div>
             <div id="weather-snapshot" class="recommendation-card"></div>

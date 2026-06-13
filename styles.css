@@ -226,6 +226,13 @@ h1 {
   margin-top: 16px;
 }
 
+.dataset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .section-head-tight {
   margin-bottom: 0;
 }
@@ -243,6 +250,9 @@ h1 {
 }
 
 .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(45, 106, 115, 0.2);
   border-radius: 999px;
   padding: 12px 18px;
@@ -252,12 +262,19 @@ h1 {
   font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
   font-size: 0.94rem;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .secondary-button:disabled,
 .primary-button:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+.button-link-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .source-copy {

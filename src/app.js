@@ -14,6 +14,9 @@ const rankingBody = document.querySelector("#ranking-body");
 const historyBody = document.querySelector("#history-body");
 const statsSummary = document.querySelector("#stats-summary");
 const statsActionsBody = document.querySelector("#stats-actions-body");
+const datasetSummary = document.querySelector("#dataset-summary");
+const evaluationExportLink = document.querySelector("#evaluation-export-link");
+const conditionsExportLink = document.querySelector("#conditions-export-link");
 const sourcesBody = document.querySelector("#sources-body");
 const weatherSnapshot = document.querySelector("#weather-snapshot");
 const aqiSnapshot = document.querySelector("#aqi-snapshot");
@@ -25,6 +28,8 @@ const sourceStatus = document.querySelector("#source-status");
 const DEFAULT_SOURCE_COPY =
   "Use official NOAA weather and AirNow AQI to fill conditions.";
 const SERVER_HINT = "Open http://127.0.0.1:4173 to enable database and official data features.";
+const EVALUATION_EXPORT_PATH = "/api/datasets/evaluations.csv";
+const CONDITION_EXPORT_PATH = "/api/datasets/official-conditions.csv";
 
 let apiAvailable = false;
 
@@ -236,6 +241,77 @@ function renderRecommendationStats(items) {
   });
 }
 
+function setDatasetLinks(enabled) {
+  const links = [
+    [evaluationExportLink, EVALUATION_EXPORT_PATH],
+    [conditionsExportLink, CONDITION_EXPORT_PATH]
+  ];
+
+  links.forEach(([link, href]) => {
+    if (enabled) {
+      link.href = href;
+      link.removeAttribute("aria-disabled");
+      link.classList.remove("button-link-disabled");
+      return;
+    }
+
+    link.href = "#";
+    link.setAttribute("aria-disabled", "true");
+    link.classList.add("button-link-disabled");
+  });
+}
+
+function renderDatasetSummary(summary) {
+  if (!summary) {
+    datasetSummary.innerHTML = `
+      <article class="summary-card">
+        <p class="summary-label">Evaluation rows</p>
+        <p class="summary-value">0</p>
+        <p class="summary-detail">Open the local server to load clean dataset exports</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">Official condition rows</p>
+        <p class="summary-value">0</p>
+        <p class="summary-detail">Combined NOAA and AirNow import batches</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">Evaluation columns</p>
+        <p class="summary-value">21</p>
+        <p class="summary-detail">Analysis ready session features and outputs</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">Condition columns</p>
+        <p class="summary-value">28</p>
+        <p class="summary-detail">Forecast and AQI fields in one clean table</p>
+      </article>
+    `;
+    return;
+  }
+
+  datasetSummary.innerHTML = `
+    <article class="summary-card">
+      <p class="summary-label">Evaluation rows</p>
+      <p class="summary-value">${summary.evaluations.rowCount}</p>
+      <p class="summary-detail">${summary.evaluations.columns.length} columns  |  Last row ${escapeHtml(summary.evaluations.lastCreatedAt || "Not available")}</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">Official condition rows</p>
+      <p class="summary-value">${summary.officialConditions.rowCount}</p>
+      <p class="summary-detail">${summary.officialConditions.columns.length} columns  |  Last row ${escapeHtml(summary.officialConditions.lastCreatedAt || "Not available")}</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">Evaluation window</p>
+      <p class="summary-value">${escapeHtml(summary.evaluations.firstCreatedAt || "None")}</p>
+      <p class="summary-detail">First saved evaluation row</p>
+    </article>
+    <article class="summary-card">
+      <p class="summary-label">Import window</p>
+      <p class="summary-value">${escapeHtml(summary.officialConditions.firstCreatedAt || "None")}</p>
+      <p class="summary-detail">First official condition batch</p>
+    </article>
+  `;
+}
+
 function renderSources(items) {
   if (!items.length) {
     renderEmptyRow(sourcesBody, 5, "No source catalog available");
@@ -380,6 +456,8 @@ function setOfflineState(reason) {
   renderHistory([]);
   renderStatsSummary(null);
   renderRecommendationStats([]);
+  renderDatasetSummary(null);
+  setDatasetLinks(false);
   renderSources(
     OFFICIAL_SOURCES.map((item) => ({
       sourceKey: item.key,
@@ -422,6 +500,12 @@ async function loadStats() {
 
   renderStatsSummary(summaryPayload.item);
   renderRecommendationStats(recommendationPayload.items);
+}
+
+async function loadDatasets() {
+  const payload = await requestJson("/api/datasets/summary");
+  renderDatasetSummary(payload.item);
+  setDatasetLinks(true);
 }
 
 async function fetchLatestWeatherSnapshot() {
@@ -564,7 +648,7 @@ async function evaluateSession({ persist }) {
   renderDecision(payload.result);
 
   if (persist) {
-    await Promise.all([loadDatabaseStatus(), loadHistory(), loadStats()]);
+    await Promise.all([loadDatabaseStatus(), loadHistory(), loadStats(), loadDatasets()]);
   }
 }
 
@@ -594,7 +678,12 @@ async function fetchOfficialConditions() {
         `Loaded official NOAA weather for ${payload.conditions.weather.city || "unknown city"}, ${payload.conditions.weather.state || ""} and AirNow AQI for ${payload.conditions.airQuality.reportingArea || "unknown area"}`.trim()
     });
 
-    await Promise.all([loadDatabaseStatus(), loadStats(), evaluateSession({ persist: false })]);
+    await Promise.all([
+      loadDatabaseStatus(),
+      loadStats(),
+      loadDatasets(),
+      evaluateSession({ persist: false })
+    ]);
   } catch (error) {
     sourceStatus.textContent = error.message;
   } finally {
@@ -608,6 +697,7 @@ async function initializeLiveData() {
     loadDatabaseStatus(),
     loadHistory(),
     loadStats(),
+    loadDatasets(),
     loadSources(),
     loadLatestOfficialConditions()
   ]);
