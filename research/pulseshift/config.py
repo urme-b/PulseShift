@@ -35,6 +35,12 @@ SENSITIVITY_RATIOS = (0.4, 0.5, 0.6)
 TRAIN_YEARS = (2022, 2023)
 TEST_YEAR = 2024
 
+# Adaptation + safety
+SHIFT_WINDOW_H = 3           # hours either side for a time shift
+HEAT_UNSAFE_F = 103.0        # heat index severe threshold
+PM25_UNSAFE = 55.5           # ug/m3, AQI 150 boundary
+MEAN_RIDE_MIN = 13.0         # Capital Bikeshare typical ride length
+
 # EPA PM2.5 -> AQI breakpoints (24h standard, ug/m3), 2024 revision
 PM25_BREAKPOINTS = (
     (0.0, 9.0, 0, 50),
