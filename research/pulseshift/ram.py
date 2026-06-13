@@ -6,23 +6,23 @@ import pandas as pd
 from . import config
 
 
-def _safe(heat_index_f, pm25):
-    return (heat_index_f < config.HEAT_UNSAFE_F) & (pm25 < config.PM25_UNSAFE)
+def _safe(heat_index_f, aqi):
+    return (heat_index_f < config.HEAT_UNSAFE_F) & (aqi < config.AQI_UNSAFE)
 
 
 def recommend(panel, risk_col="risk", window=config.SHIFT_WINDOW_H):
     """Per active hour, choose keep or the lowest-risk safe time shift."""
     df = panel.copy()
-    df["date"] = df["ts_local"].dt.date
-    df["safe"] = _safe(df["heat_index_f"], df["pm25"])
+    df["day"] = df["ts_local"].dt.date
+    df["safe"] = _safe(df["heat_index_f"], df["aqi"])
 
-    actions, targets, target_risk, t_heat, t_pm = [], [], [], [], []
-    for _, day in df.groupby("date"):
+    actions, targets, target_risk, t_heat, t_aqi = [], [], [], [], []
+    for _, day in df.groupby("day"):
         hours = day["hour"].to_numpy()
         risk = day[risk_col].to_numpy()
         safe = day["safe"].to_numpy()
         heat = day["heat_index_f"].to_numpy()
-        pm = day["pm25"].to_numpy()
+        air = day["aqi"].to_numpy()
         for i in range(len(day)):
             near = np.abs(hours - hours[i]) <= window
             feasible = near & safe
@@ -31,7 +31,7 @@ def recommend(panel, risk_col="risk", window=config.SHIFT_WINDOW_H):
                 targets.append(np.nan)
                 target_risk.append(1.0)
                 t_heat.append(heat[i])
-                t_pm.append(pm[i])
+                t_aqi.append(air[i])
                 continue
             cand = np.where(feasible)[0]
             best = cand[np.argmin(risk[cand])]
@@ -39,13 +39,13 @@ def recommend(panel, risk_col="risk", window=config.SHIFT_WINDOW_H):
             targets.append(hours[best])
             target_risk.append(risk[best])
             t_heat.append(heat[best])
-            t_pm.append(pm[best])
+            t_aqi.append(air[best])
 
     df["action"] = actions
     df["target_hour"] = targets
     df["chosen_risk"] = target_risk
     df["target_heat_index_f"] = t_heat
-    df["target_pm25"] = t_pm
+    df["target_aqi"] = t_aqi
     return df
 
 
