@@ -45,12 +45,13 @@ function recommend(input, hi, p, unsafe) {
   if (unsafe) {
     return "Unsafe for outdoor activity — move indoors or reschedule.";
   }
-  if (p >= 0.5) {
+  if (p >= 0.6) {
     if (hi >= 85) return "High suppression risk from heat — shift to early morning or evening.";
     if (input.aqi >= 100) return "Elevated risk from air quality — shorten, ease intensity, or move indoors.";
     return "High risk — reduce intensity and shorten the session.";
   }
-  if (p >= 0.3) return "Moderate risk — hydrate, ease the pace, and keep it shorter.";
+  if (p >= 0.35) return "Elevated risk — shorten the session and ease the pace.";
+  if (p >= 0.15) return "Moderate risk — hydrate, ease the pace, and keep it shorter.";
   return "Conditions look favorable — keep your plan.";
 }
 
