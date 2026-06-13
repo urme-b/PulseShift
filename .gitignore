@@ -4,3 +4,10 @@ node_modules/
 data/*.sqlite
 data/*.sqlite-shm
 data/*.sqlite-wal
+
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+research/data/raw/
+research/data/interim/
