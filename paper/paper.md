@@ -234,8 +234,9 @@ rider-minutes at the typical ride length). This is an upper bound under perfect 
 also does not cap target-hour capacity (the 1,695 recommended shifts land in 1,165 distinct day–hour
 slots). The policy is conservative — it shifts only 20% of hours and cancels 0.06% — and is **safe by
 construction**: zero recommendations fall in unsafe conditions, and each shift lowers predicted risk
-by 0.14 on average. The recovered share sits in the 18–32% range the earlier project draft asserted
-without evidence; here it is reproduced, as a bounded estimate, from public data.
+by 0.14 on average. Where the earlier project draft asserted an 18–32% recovery with no evidence,
+this ~37% is an explicit upper bound — somewhat higher, but reproduced from public data and reported
+with its assumptions.
 
 ### 6.4 Robustness and subgroups
 
@@ -263,8 +264,8 @@ Third, the framework still does useful work despite a modest model: a transparen
 score plus a safety-constrained adaptation policy recovers a meaningful, bounded share of lost
 activity without ever recommending an unsafe hour. RAM gives organizers a single decision-facing
 number, and the safety audit guarantees the policy cannot buy participation with exposure. The
-companion PulseShift application ships the same calibrated logistic model client-side; this paper is
-its evidence layer.
+companion PulseShift application ships the same logistic model — the well-calibrated unweighted
+variant, refit on all available data — client-side; this paper is its evidence layer.
 
 ## 8. Limitations
 
@@ -294,9 +295,9 @@ served by the app. The processed panel is committed so the analysis runs without
    2021;398(10301):698–708. doi:10.1016/S0140-6736(21)01208-3
 3. Kim K. Investigation on the effects of weather and calendar events on bike-sharing according to
    the trip patterns of bike rentals of stations. *Journal of Transport Geography*. 2018.
-4. Bean R, Pojani D, Corcoran J. How does weather affect bikeshare use? A comparative analysis of
-   forty cities across climate zones. *Journal of Transport Geography*. 2021.
-5. Güzel D, et al. Assessment of weather-driven travel behavior on a small-scale docked bike-sharing
+4. Bean R, et al. How does weather affect bikeshare use? A comparative analysis of forty cities
+   across climate zones. *Journal of Transport Geography*. 2021.
+5. Guzel D, et al. Assessment of weather-driven travel behavior on a small-scale docked bike-sharing
    system usage. *Travel Behaviour and Society*. 2025.
 6. Fanaee-T H, Gama J. Event labeling combining ensemble detectors and background knowledge.
    *Progress in Artificial Intelligence*. 2013.
