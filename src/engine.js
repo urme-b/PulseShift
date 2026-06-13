@@ -179,16 +179,18 @@ export function scoreHeatSeverity(heatIndexF) {
 }
 
 export function scoreSmokeSeverity(aqi, smokeAlert) {
-  let severity = 0;
+  let severity;
 
   if (aqi <= 50) {
-    severity = 0.04;
+    severity = interpolate(aqi, 0, 50, 0.02, 0.12);
   } else if (aqi <= 100) {
-    severity = interpolate(aqi, 51, 100, 0.12, 0.34);
+    severity = interpolate(aqi, 50, 100, 0.12, 0.34);
   } else if (aqi <= 150) {
-    severity = interpolate(aqi, 101, 150, 0.4, 0.68);
+    severity = interpolate(aqi, 100, 150, 0.34, 0.68);
   } else if (aqi <= 200) {
-    severity = interpolate(aqi, 151, 200, 0.74, 0.92);
+    severity = interpolate(aqi, 150, 200, 0.68, 0.92);
+  } else if (aqi <= 300) {
+    severity = interpolate(aqi, 200, 300, 0.92, 1);
   } else {
     severity = 1;
   }
