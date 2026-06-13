@@ -1,72 +1,92 @@
 {
   "panel_rows": 26288,
-  "active_hours": 24601,
-  "train_rows": 16085,
-  "test_rows": 8516,
-  "test_base_rate": 0.0556599342414279,
+  "active_hours": 24641,
+  "train_rows": 16150,
+  "test_rows": 8491,
+  "test_base_rate": 0.0492285949829231,
   "model_comparison": [
     {
       "model": "Climatology",
-      "n": 8516,
-      "base_rate": 0.0556599342414279,
-      "auroc": 0.6485079125729163,
-      "auprc": 0.08553474253199278,
-      "brier": 0.052686237396582965,
-      "log_loss": 0.21396233147903884,
-      "ece": 0.02114797368238747,
-      "cal_slope": 0.5512199804618397,
-      "cal_intercept": -1.3963715190156811
+      "n": 8491,
+      "base_rate": 0.0492285949829231,
+      "auroc": 0.6597637467202686,
+      "auprc": 0.08238862003379532,
+      "brier": 0.0473106913432688,
+      "log_loss": 0.20096197848523994,
+      "ece": 0.028441878811441983,
+      "cal_slope": 0.4414288976325154,
+      "cal_intercept": -1.799535491941215
     },
     {
-      "model": "Logistic",
-      "n": 8516,
-      "base_rate": 0.0556599342414279,
-      "auroc": 0.8923032769940932,
-      "auprc": 0.42092519396307765,
-      "brier": 0.1279757164083899,
-      "log_loss": 0.40897424241579916,
-      "ece": 0.23661568119788476,
-      "cal_slope": 0.9508619739589123,
-      "cal_intercept": -2.7412452979823274
+      "model": "Logistic (unweighted)",
+      "n": 8491,
+      "base_rate": 0.0492285949829231,
+      "auroc": 0.8912921979283536,
+      "auprc": 0.4257377558516599,
+      "brier": 0.03695152695607326,
+      "log_loss": 0.1386729984464259,
+      "ece": 0.021993721376706247,
+      "cal_slope": 1.0666186375330138,
+      "cal_intercept": -0.3897786853841119
     },
     {
-      "model": "Logistic + calibration",
-      "n": 8516,
-      "base_rate": 0.0556599342414279,
-      "auroc": 0.8893962026365799,
-      "auprc": 0.37489653206494666,
-      "brier": 0.04044957799696304,
-      "log_loss": 0.14953368710857612,
-      "ece": 0.007540736513889193,
-      "cal_slope": 0.9303189766363819,
-      "cal_intercept": -0.2971515884243032
+      "model": "Logistic (balanced)",
+      "n": 8491,
+      "base_rate": 0.0492285949829231,
+      "auroc": 0.8934050947780924,
+      "auprc": 0.39982378737081864,
+      "brier": 0.13599207633759922,
+      "log_loss": 0.430398428772342,
+      "ece": 0.24875833517394116,
+      "cal_slope": 0.9027986583840092,
+      "cal_intercept": -2.9550367871746506
+    },
+    {
+      "model": "Logistic (balanced) + calibration",
+      "n": 8491,
+      "base_rate": 0.0492285949829231,
+      "auroc": 0.8927807085701822,
+      "auprc": 0.3953715187845302,
+      "brier": 0.04084814929749989,
+      "log_loss": 0.1501257073585199,
+      "ece": 0.03996217823103265,
+      "cal_slope": 1.0332719854767463,
+      "cal_intercept": -0.7843057257006686
     }
   ],
   "ram": {
-    "recovered_rides": 116584.38384798712,
-    "recovered_minutes": 1515596.9900238325,
-    "lost_rides_no_adapt": 309520.56968215795,
-    "ram_pct_of_lost": 0.3766611827049358,
-    "share_shifted": 0.13809300140911226,
-    "share_cancel": 0.0005871301080319399
+    "recovered_rides": 150086.90438571066,
+    "recovered_minutes": 1951129.7570142385,
+    "lost_rides_no_adapt": 404770.56663205,
+    "ram_pct_of_lost": 0.3707950052656489,
+    "share_shifted": 0.19962313037333648,
+    "share_cancel": 0.0005888587916617595,
+    "n_shifts": 1695,
+    "distinct_target_slots": 1165
   },
   "safety": {
-    "n_shifts": 1176,
+    "n_shifts": 1695,
     "n_cancel": 5,
     "unsafe_recommendations": 0,
-    "mean_risk_reduction": 0.1488120787706722,
+    "mean_risk_reduction": 0.13935084834242412,
     "all_safe": true
+  },
+  "smoke_event": {
+    "jun8_ratio": 0.76,
+    "summer_weekday_days": 66,
+    "pct_days_below_jun8": 0.07575757575757576,
+    "summer_ratio_median": 0.9675397032225801
   },
   "rider_burden": [
     {
       "rider_type": "member",
-      "active_hours": 23464,
-      "suppression_rate": 0.05992158199795431
+      "active_hours": 23101,
+      "suppression_rate": 0.05839574044413662
     },
     {
       "rider_type": "casual",
-      "active_hours": 22049,
-      "suppression_rate": 0.10082089890697991
+      "active_hours": 21875,
+      "suppression_rate": 0.10249142857142857
     }
   ]
 }
