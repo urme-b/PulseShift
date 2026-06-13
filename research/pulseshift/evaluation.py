@@ -43,7 +43,7 @@ def metrics(y_true, y_prob):
         "auroc": float(roc_auc_score(y_true, y_prob)),
         "auprc": float(average_precision_score(y_true, y_prob)),
         "brier": float(brier_score_loss(y_true, y_prob)),
-        "log_loss": float(log_loss(y_true, y_prob, labels=[0, 1])),
+        "log_loss": float(log_loss(y_true, np.clip(y_prob, 1e-6, 1 - 1e-6), labels=[0, 1])),
         "ece": expected_calibration_error(y_true, y_prob),
         "cal_slope": slope,
         "cal_intercept": intercept,
