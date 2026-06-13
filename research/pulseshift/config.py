@@ -19,10 +19,7 @@ LCD_STATION = "72405013743"
 LCD_URL = "https://www.ncei.noaa.gov/data/local-climatological-data/access/{year}/{station}.csv"
 
 # EPA AirData
-EPA_HOURLY_PM25_URL = "https://aqs.epa.gov/aqsweb/airdata/hourly_88101_{year}.zip"
 EPA_DAILY_AQI_URL = "https://aqs.epa.gov/aqsweb/airdata/daily_aqi_by_county_{year}.zip"
-DC_STATE_CODE = "11"
-DC_COUNTY_CODE = "001"
 
 LOCAL_TZ = "America/New_York"
 
@@ -38,18 +35,8 @@ TEST_YEAR = 2024
 # Adaptation + safety
 SHIFT_WINDOW_H = 3           # hours either side for a time shift
 HEAT_UNSAFE_F = 103.0        # heat index severe threshold
-PM25_UNSAFE = 55.5           # ug/m3, AQI 150 boundary
+AQI_UNSAFE = 150             # unhealthy boundary
 MEAN_RIDE_MIN = 13.0         # Capital Bikeshare typical ride length
-
-# EPA PM2.5 -> AQI breakpoints (24h standard, ug/m3), 2024 revision
-PM25_BREAKPOINTS = (
-    (0.0, 9.0, 0, 50),
-    (9.1, 35.4, 51, 100),
-    (35.5, 55.4, 101, 150),
-    (55.5, 125.4, 151, 200),
-    (125.5, 225.4, 201, 300),
-    (225.5, 325.4, 301, 500),
-)
 
 
 def ym_list():

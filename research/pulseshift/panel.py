@@ -3,7 +3,7 @@
 import pandas as pd
 
 from . import config, ingest
-from .features import add_temporal, aqi_from_pm25, heat_index_f
+from .features import add_temporal, heat_index_f
 
 
 def _expected_rides(df):
@@ -22,24 +22,24 @@ def label_suppression(df, ratio=config.SUPPRESSION_RATIO, floor=config.EXPECTED_
 def build_panel(write=True):
     bikes = ingest.load_bikeshare()
     weather = ingest.load_weather()
-    pm25 = ingest.load_pm25()
+    aqi = ingest.load_aqi()
 
-    for frame in (bikes, weather, pm25):
+    for frame in (bikes, weather):
         frame["ts_utc"] = pd.to_datetime(frame["ts_utc"])
 
-    panel = bikes.merge(weather, on="ts_utc", how="inner").merge(pm25, on="ts_utc", how="inner")
-    panel = panel.sort_values("ts_utc").reset_index(drop=True)
-
-    for col in ["temp_f", "humidity", "dewpoint_f", "wind_mph", "visibility_mi", "pm25"]:
+    panel = bikes.merge(weather, on="ts_utc", how="inner").sort_values("ts_utc").reset_index(drop=True)
+    for col in ["temp_f", "humidity", "dewpoint_f", "wind_mph", "visibility_mi"]:
         panel[col] = panel[col].interpolate(limit=3).ffill(limit=3).bfill(limit=3)
-    panel = panel.dropna(subset=["temp_f", "humidity", "pm25"]).reset_index(drop=True)
 
     panel["ts_local"] = panel["ts_utc"].dt.tz_localize("UTC").dt.tz_convert(config.LOCAL_TZ).dt.tz_localize(None)
+    panel["date"] = panel["ts_local"].dt.normalize()
+    panel = panel.merge(aqi[["date", "aqi", "aqi_category", "defining_parameter"]], on="date", how="left")
+    panel["aqi"] = panel["aqi"].ffill().bfill()
+
     panel = add_temporal(panel)
     panel["is_weekend"] = (panel["daytype"] == "weekend").astype(int)
-
     panel["heat_index_f"] = heat_index_f(panel["temp_f"], panel["humidity"])
-    panel["aqi"] = aqi_from_pm25(panel["pm25"], config.PM25_BREAKPOINTS)
+    panel = panel.dropna(subset=["temp_f", "humidity", "aqi"]).reset_index(drop=True)
 
     panel["expected_rides"] = _expected_rides(panel)
     panel["active_hour"], panel["suppressed"] = label_suppression(panel)

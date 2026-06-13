@@ -48,7 +48,7 @@ def load_bikeshare():
                 frames.append(df)
 
     trips = pd.concat(frames, ignore_index=True)
-    started = pd.to_datetime(trips["started_at"], errors="coerce")
+    started = pd.to_datetime(trips["started_at"], format="mixed", errors="coerce")
     local = started.dt.tz_localize(
         config.LOCAL_TZ, ambiguous="NaT", nonexistent="shift_forward"
     )
@@ -121,31 +121,26 @@ def load_weather():
     return hourly
 
 
-def load_pm25():
-    """Hourly DC PM2.5 (UTC) from EPA AQS, averaged across monitors."""
-    cache = config.INTERIM / "pm25_hourly.csv"
+def load_aqi():
+    """Daily DC AQI from EPA AirData."""
+    cache = config.INTERIM / "aqi_daily.csv"
     if cache.exists():
-        return pd.read_csv(cache, parse_dates=["ts_utc"])
+        return pd.read_csv(cache, parse_dates=["date"])
 
-    use = ["State Code", "County Code", "Date GMT", "Time GMT", "Sample Measurement"]
+    use = ["State Name", "Date", "AQI", "Category", "Defining Parameter"]
     parts = []
     for year in config.YEARS:
-        path = _download(config.EPA_HOURLY_PM25_URL.format(year=year), config.RAW / f"epa_pm25_{year}.zip")
-        for chunk in pd.read_csv(path, usecols=use, compression="zip", chunksize=500_000, low_memory=False):
-            dc = chunk[(chunk["State Code"] == 11) & (chunk["County Code"] == 1)]
-            if len(dc):
-                parts.append(dc.copy())
+        path = _download(config.EPA_DAILY_AQI_URL.format(year=year), config.RAW / f"epa_aqi_{year}.zip")
+        df = pd.read_csv(path, usecols=use, compression="zip")
+        parts.append(df[df["State Name"] == "District Of Columbia"])
 
-    pm = pd.concat(parts, ignore_index=True)
-    pm["ts_utc"] = pd.to_datetime(pm["Date GMT"] + " " + pm["Time GMT"], errors="coerce")
-    hourly = (
-        pm.dropna(subset=["ts_utc"])
-        .groupby("ts_utc")["Sample Measurement"]
-        .mean()
+    aqi = pd.concat(parts, ignore_index=True)
+    daily = (
+        aqi.assign(date=pd.to_datetime(aqi["Date"]))
+        .groupby("date")
+        .agg(aqi=("AQI", "max"), aqi_category=("Category", "first"), defining_parameter=("Defining Parameter", "first"))
         .reset_index()
-        .rename(columns={"Sample Measurement": "pm25"})
     )
-    hourly["pm25"] = hourly["pm25"].clip(lower=0)
     cache.parent.mkdir(parents=True, exist_ok=True)
-    hourly.to_csv(cache, index=False)
-    return hourly
+    daily.to_csv(cache, index=False)
+    return daily

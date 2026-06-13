@@ -23,17 +23,6 @@ def heat_index_f(temp_f, humidity):
     return np.where(mild, t, np.round(hi, 1))
 
 
-def aqi_from_pm25(pm25, breakpoints):
-    """Piecewise-linear AQI from PM2.5 concentration."""
-    pm = np.asarray(pm25, dtype=float)
-    out = np.full(pm.shape, np.nan)
-    for lo_c, hi_c, lo_i, hi_i in breakpoints:
-        mask = (pm >= lo_c) & (pm <= hi_c)
-        out[mask] = lo_i + (hi_i - lo_i) * (pm[mask] - lo_c) / (hi_c - lo_c)
-    out[pm > breakpoints[-1][1]] = breakpoints[-1][3]
-    return np.round(out)
-
-
 def season_of(month):
     return pd.cut(
         month, bins=[0, 2, 5, 8, 11, 12], labels=["winter", "spring", "summer", "fall", "winter2"],
@@ -57,7 +46,7 @@ def add_temporal(df, ts_col="ts_local"):
 
 MODEL_FEATURES = [
     "heat_index_f",
-    "pm25",
+    "aqi",
     "humidity",
     "wind_mph",
     "visibility_mi",
