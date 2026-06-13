@@ -64,6 +64,8 @@ def ram_table(reco, risk_col="risk"):
 
     lost = float((expected * reco[risk_col].to_numpy()).sum())
     total = float(recovered.sum())
+    shifts = reco[reco["action"] == "shift"]
+    distinct_slots = int(shifts.groupby(["day", "target_hour"]).ngroups) if len(shifts) else 0
     return {
         "recovered_rides": total,
         "recovered_minutes": total * config.MEAN_RIDE_MIN,
@@ -71,5 +73,7 @@ def ram_table(reco, risk_col="risk"):
         "ram_pct_of_lost": float(total / lost) if lost else 0.0,
         "share_shifted": float((reco["action"] == "shift").mean()),
         "share_cancel": float((reco["action"] == "cancel").mean()),
+        "n_shifts": int(len(shifts)),
+        "distinct_target_slots": distinct_slots,
         "per_hour": pd.Series(recovered, index=reco.index),
     }
