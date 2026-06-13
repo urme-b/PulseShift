@@ -4,10 +4,11 @@ import json
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 
 from pulseshift import config, decision, equity, plots, ram, safety
 from pulseshift.calibration import calibrate_cv
-from pulseshift.evaluation import metrics
+from pulseshift.evaluation import bootstrap_ci, expected_calibration_error, metrics
 from pulseshift.features import MODEL_FEATURES
 from pulseshift.models import ClimatologyBaseline, fit_logistic, predict, temporal_split
 from pulseshift.panel import active, label_suppression, load_panel
@@ -64,6 +65,18 @@ def main():
     )
     _write_table(comparison, "model_comparison")
 
+    yt = test["suppressed"].to_numpy()
+    ci = {
+        "auroc": bootstrap_ci(yt, p_cal, roc_auc_score),
+        "auprc": bootstrap_ci(yt, p_cal, average_precision_score),
+        "brier": bootstrap_ci(yt, p_cal, brier_score_loss),
+        "ece": bootstrap_ci(yt, p_cal, lambda y, p: expected_calibration_error(np.asarray(y), np.asarray(p))),
+    }
+    _write_table(
+        pd.DataFrame([{"metric": k, "low": lo, "high": hi} for k, (lo, hi) in ci.items()]),
+        "calibrated_ci",
+    )
+
     coef = pd.DataFrame(
         {"feature": MODEL_FEATURES, "coefficient": logit.named_steps["clf"].coef_[0]}
     ).sort_values("coefficient", key=abs, ascending=False)
@@ -94,6 +107,21 @@ def main():
     ram_stats = ram.ram_table(reco)
     plots.ram_by_month(reco, ram_stats["per_hour"])
     audit = safety.audit(reco)
+
+    by_day = pd.DataFrame(
+        {
+            "day": reco["ts_local"].dt.date.to_numpy(),
+            "recovered": ram_stats["per_hour"].to_numpy(),
+            "lost": (reco["expected_rides"] * reco["risk"]).to_numpy(),
+        }
+    ).groupby("day")[["recovered", "lost"]].sum()
+    rng = np.random.default_rng(0)
+    days = by_day.index.to_numpy()
+    ratios = []
+    for _ in range(1000):
+        g = by_day.loc[rng.choice(days, size=len(days), replace=True)]
+        ratios.append(g["recovered"].sum() / g["lost"].sum() if g["lost"].sum() else 0.0)
+    ram_ci = [round(float(x), 3) for x in np.percentile(ratios, [2.5, 97.5])]
 
     event = panel[(panel["ts_local"] >= "2023-06-06") & (panel["ts_local"] < "2023-06-10")]
     event_tbl = (
@@ -145,7 +173,9 @@ def main():
         "test_rows": int(len(test)),
         "test_base_rate": float(test["suppressed"].mean()),
         "model_comparison": comparison.to_dict(orient="records"),
+        "calibrated_ci": ci,
         "ram": {k: v for k, v in ram_stats.items() if k != "per_hour"},
+        "ram_pct_ci": ram_ci,
         "safety": audit,
         "smoke_event": smoke_context,
         "rider_burden": burden.to_dict(orient="records"),
