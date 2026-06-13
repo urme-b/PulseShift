@@ -93,7 +93,8 @@ def load_weather():
 
     lcd = pd.concat(frames, ignore_index=True)
     stamp = pd.to_datetime(lcd["DATE"], errors="coerce")
-    # LCD is local standard time (UTC-5) year round.
+    # LCD is Local Standard Time (no DST); rides use wall-clock local.
+    # Both resolve to true UTC, so the hourly join pairs simultaneous conditions.
     lcd["ts_utc"] = stamp.dt.tz_localize("Etc/GMT+5").dt.tz_convert("UTC").dt.tz_localize(None)
     lcd["smoke_haze"] = (
         lcd["HourlyPresentWeatherType"].astype(str).str.contains("HZ|FU|smoke|haze", case=False, na=False)
