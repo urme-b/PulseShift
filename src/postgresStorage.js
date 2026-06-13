@@ -1,3 +1,8 @@
+import {
+  buildEvaluationDatasetRow,
+  buildOfficialConditionsDatasetRow,
+  DATASET_DEFINITIONS
+} from "./datasets.js";
 import { OFFICIAL_SOURCES } from "./sourceCatalog.js";
 
 function formatCreatedAt(value) {
@@ -435,6 +440,93 @@ export async function createPostgresStorage({
             : Math.round((Number(item.total) / totalEvaluations) * 1000) / 10,
         averageRam: Number(item.averageRam)
       }));
+    },
+    async getDatasetSummary() {
+      const evaluationQuery = `
+        SELECT
+          COUNT(*)::int AS "totalRows",
+          MIN(created_at) AS "firstCreatedAt",
+          MAX(created_at) AS "lastCreatedAt"
+        FROM evaluations
+      `;
+      const officialConditionQuery = `
+        SELECT
+          COUNT(*)::int AS "totalRows",
+          MIN(created_at) AS "firstCreatedAt",
+          MAX(created_at) AS "lastCreatedAt"
+        FROM official_condition_imports
+      `;
+      const [evaluationResponse, officialConditionResponse] = await Promise.all([
+        activeClient.query(evaluationQuery),
+        activeClient.query(officialConditionQuery)
+      ]);
+      const evaluations = evaluationResponse.rows[0];
+      const officialConditions = officialConditionResponse.rows[0];
+
+      return {
+        evaluations: {
+          key: DATASET_DEFINITIONS.evaluations.key,
+          label: DATASET_DEFINITIONS.evaluations.label,
+          rowCount: Number(evaluations.totalRows),
+          firstCreatedAt: evaluations.firstCreatedAt,
+          lastCreatedAt: evaluations.lastCreatedAt,
+          columns: DATASET_DEFINITIONS.evaluations.columns
+        },
+        officialConditions: {
+          key: DATASET_DEFINITIONS.officialConditions.key,
+          label: DATASET_DEFINITIONS.officialConditions.label,
+          rowCount: Number(officialConditions.totalRows),
+          firstCreatedAt: officialConditions.firstCreatedAt,
+          lastCreatedAt: officialConditions.lastCreatedAt,
+          columns: DATASET_DEFINITIONS.officialConditions.columns
+        }
+      };
+    },
+    async listEvaluationDatasetRows() {
+      const query = `
+        SELECT
+          id,
+          session_name AS "sessionName",
+          input_json AS "inputJson",
+          baseline_risk_score AS "baselineRiskScore",
+          baseline_risk_band AS "baselineRiskBand",
+          baseline_expected_minutes AS "baselineExpectedMinutes",
+          best_action AS "bestAction",
+          best_ram AS "bestRam",
+          result_json AS "resultJson",
+          created_at AS "createdAt"
+        FROM evaluations
+        ORDER BY id ASC
+      `;
+      const response = await activeClient.query(query);
+
+      return response.rows.map((row) => buildEvaluationDatasetRow(row));
+    },
+    async listOfficialConditionDatasetRows() {
+      const query = `
+        SELECT
+          i.id AS "importBatchId",
+          i.created_at AS "createdAt",
+          w.source_key AS "weatherSourceKey",
+          w.latitude,
+          w.longitude,
+          w.city,
+          w.state AS "weatherState",
+          w.payload_json AS "weatherPayloadJson",
+          a.source_key AS "aqiSourceKey",
+          a.reporting_area AS "reportingArea",
+          a.state AS "aqiState",
+          a.payload_json AS "aqiPayloadJson"
+        FROM official_condition_imports i
+        JOIN weather_snapshots w
+          ON w.import_batch_id = i.id
+        JOIN aqi_snapshots a
+          ON a.import_batch_id = i.id
+        ORDER BY i.id ASC
+      `;
+      const response = await activeClient.query(query);
+
+      return response.rows.map((row) => buildOfficialConditionsDatasetRow(row));
     },
     async getLatestWeatherSnapshot() {
       const query = `

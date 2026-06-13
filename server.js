@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { fetchOfficialAirQualitySnapshot } from "./src/airnow.js";
 import { createStorage } from "./src/db.js";
+import { DATASET_DEFINITIONS, toCsv } from "./src/datasets.js";
 import { rankAdaptations } from "./src/engine.js";
 import { fetchOfficialWeatherSnapshot } from "./src/nws.js";
 import {
@@ -34,6 +35,14 @@ function sendJson(response, statusCode, payload) {
 function sendText(response, statusCode, payload) {
   response.writeHead(statusCode, {
     "Content-Type": "text/plain; charset=utf-8"
+  });
+  response.end(payload);
+}
+
+function sendCsv(response, fileName, payload) {
+  response.writeHead(200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${fileName}"`
   });
   response.end(payload);
 }
@@ -148,6 +157,38 @@ export function createAppServer({
         sendJson(response, 200, {
           items: await database.listRecommendationStats()
         });
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/datasets/summary") {
+        sendJson(response, 200, {
+          item: await database.getDatasetSummary()
+        });
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/datasets/evaluations.csv") {
+        const rows = await database.listEvaluationDatasetRows();
+
+        sendCsv(
+          response,
+          "pulseshift_evaluations.csv",
+          toCsv(DATASET_DEFINITIONS.evaluations.columns, rows)
+        );
+        return;
+      }
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/datasets/official-conditions.csv"
+      ) {
+        const rows = await database.listOfficialConditionDatasetRows();
+
+        sendCsv(
+          response,
+          "pulseshift_official_conditions.csv",
+          toCsv(DATASET_DEFINITIONS.officialConditions.columns, rows)
+        );
         return;
       }
 
