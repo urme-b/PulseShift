@@ -29,13 +29,14 @@ def strata_metrics(df, group_col, risk_col="risk"):
 
 
 def rider_burden(panel):
-    """Suppression rate by rider type using each type's own climatology."""
-    keys = ["year", "season", "daytype", "hour"]
+    """Suppression rate by rider type over the full 2022-2024 panel."""
+    from .panel import _expected_rides
+
     rows = []
     for kind, col in [("member", "rides_member"), ("casual", "rides_casual")]:
-        expected = panel.groupby(keys)[col].transform("median")
+        expected = _expected_rides(panel, value=col)
         active = expected >= config.EXPECTED_FLOOR
-        suppressed = (panel[col] < config.SUPPRESSION_RATIO * expected) & active
+        suppressed = (panel[col].to_numpy() < config.SUPPRESSION_RATIO * expected) & active
         rows.append(
             {
                 "rider_type": kind,

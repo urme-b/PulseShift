@@ -6,10 +6,13 @@ from . import config, ingest
 from .features import add_temporal, heat_index_f
 
 
-def _expected_rides(df):
-    """Weather-free temporal climatology of typical ridership."""
-    keys = ["year", "season", "daytype", "hour"]
-    return df.groupby(keys)["rides_total"].transform("median")
+def _expected_rides(df, value="rides_total"):
+    """Train-fit diurnal/seasonal shape, rescaled to each year's volume."""
+    keys = ["season", "daytype", "hour"]
+    train = df[df["year"].isin(config.TRAIN_YEARS)]
+    shape = train.groupby(keys)[value].median().reindex(pd.MultiIndex.from_frame(df[keys])).to_numpy()
+    level = (df.groupby("year")[value].transform("mean") / train[value].mean()).to_numpy()
+    return shape * level
 
 
 def label_suppression(df, ratio=config.SUPPRESSION_RATIO, floor=config.EXPECTED_FLOOR):
