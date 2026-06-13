@@ -1,0 +1,72 @@
+{
+  "panel_rows": 26288,
+  "active_hours": 24601,
+  "train_rows": 16085,
+  "test_rows": 8516,
+  "test_base_rate": 0.0556599342414279,
+  "model_comparison": [
+    {
+      "model": "Climatology",
+      "n": 8516,
+      "base_rate": 0.0556599342414279,
+      "auroc": 0.6485079125729163,
+      "auprc": 0.08553474253199278,
+      "brier": 0.052686237396582965,
+      "log_loss": 0.21396233147903884,
+      "ece": 0.02114797368238747,
+      "cal_slope": 0.5512199804618397,
+      "cal_intercept": -1.3963715190156811
+    },
+    {
+      "model": "Logistic",
+      "n": 8516,
+      "base_rate": 0.0556599342414279,
+      "auroc": 0.8923032769940932,
+      "auprc": 0.42092519396307765,
+      "brier": 0.1279757164083899,
+      "log_loss": 0.40897424241579916,
+      "ece": 0.23661568119788476,
+      "cal_slope": 0.9508619739589123,
+      "cal_intercept": -2.7412452979823274
+    },
+    {
+      "model": "Logistic + calibration",
+      "n": 8516,
+      "base_rate": 0.0556599342414279,
+      "auroc": 0.8893962026365799,
+      "auprc": 0.37489653206494666,
+      "brier": 0.04044957799696304,
+      "log_loss": 0.14953368710857612,
+      "ece": 0.007540736513889193,
+      "cal_slope": 0.9303189766363819,
+      "cal_intercept": -0.2971515884243032
+    }
+  ],
+  "ram": {
+    "recovered_rides": 116584.38384798712,
+    "recovered_minutes": 1515596.9900238325,
+    "lost_rides_no_adapt": 309520.56968215795,
+    "ram_pct_of_lost": 0.3766611827049358,
+    "share_shifted": 0.13809300140911226,
+    "share_cancel": 0.0005871301080319399
+  },
+  "safety": {
+    "n_shifts": 1176,
+    "n_cancel": 5,
+    "unsafe_recommendations": 0,
+    "mean_risk_reduction": 0.1488120787706722,
+    "all_safe": true
+  },
+  "rider_burden": [
+    {
+      "rider_type": "member",
+      "active_hours": 23464,
+      "suppression_rate": 0.05992158199795431
+    },
+    {
+      "rider_type": "casual",
+      "active_hours": 22049,
+      "suppression_rate": 0.10082089890697991
+    }
+  ]
+}
