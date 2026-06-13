@@ -18,15 +18,17 @@ The repository has two parts that share one idea:
 
 On real DC data, with out-of-time (2024) validation:
 
-- Environmental features lift suppression-forecast **AUROC from 0.65 (climatology) to 0.89**.
-- The balanced logistic model is badly **over-confident** (Brier 0.128); **isotonic calibration**
-  fixes it (Brier 0.040, ECE 0.008) with no loss of discrimination — calibration, not accuracy, is
-  what makes the risk usable.
-- Marginal exposure–response is **confounded by season** (cold dominates suppression here), but the
-  **June 2023 wildfire-smoke episode** drove ridership to **0.78× expected at AQI 196** — clean
-  evidence of acute air-quality suppression.
-- A safety-constrained time-shift policy recovers **~38% of otherwise-lost activity** while never
-  recommending an unsafe hour. Discretionary riders bear ~1.7× the burden of committed riders.
+- Environmental + temporal features lift suppression-forecast **AUROC from 0.66 (season-aware
+  climatology) to 0.89**.
+- A **balanced** logistic model is badly **over-confident** (Brier 0.136, ECE 0.249); both an
+  unweighted model and **isotonic calibration** restore reliability (Brier ≈ 0.04) with discrimination
+  essentially unchanged — calibration, not accuracy, is what makes the risk usable.
+- Marginal exposure–response is **confounded by season** (cold dominates suppression here), but
+  during the **June 2023 wildfire-smoke episode** ridership fell to **0.76× expected at AQI 196** —
+  among the lowest ~8% of summer weekday days.
+- A safety-constrained time-shift policy could recover **up to ~37% of otherwise-lost activity**
+  (an upper bound) while never recommending an unsafe hour. Discretionary riders bear ~1.8× the
+  burden of committed riders.
 
 See [`paper/paper.md`](paper/paper.md) for the full write-up and [`research/README.md`](research/README.md)
 to reproduce it.
