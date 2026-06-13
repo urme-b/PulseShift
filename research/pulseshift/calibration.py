@@ -3,12 +3,14 @@
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 
 from .features import MODEL_FEATURES
+from .models import build_logistic
 
 
-def calibrate(model, calib_df, method="isotonic", features=MODEL_FEATURES):
-    calibrated = CalibratedClassifierCV(model, method=method, cv="prefit")
-    calibrated.fit(calib_df[features], calib_df["suppressed"])
-    return calibrated
+def calibrate_cv(train_df, method="isotonic", cv=5, balanced=True, features=MODEL_FEATURES):
+    """Cross-validated calibration over all training seasons."""
+    model = CalibratedClassifierCV(build_logistic(balanced), method=method, cv=cv)
+    model.fit(train_df[features], train_df["suppressed"])
+    return model
 
 
 def reliability(y_true, y_prob, n_bins=10):

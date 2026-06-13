@@ -15,12 +15,6 @@ def temporal_split(panel, train_years=config.TRAIN_YEARS, test_year=config.TEST_
     return train, test
 
 
-def calibration_split(train, frac=0.75):
-    """Earlier slice fits, later slice calibrates (no shuffling)."""
-    cut = int(len(train) * frac)
-    return train.iloc[:cut].copy(), train.iloc[cut:].copy()
-
-
 class ClimatologyBaseline:
     """Suppression rate by season x daytype x hour; ignores weather."""
 
@@ -36,13 +30,17 @@ class ClimatologyBaseline:
         return np.array([self.rates_.get(k, self.prior_) for k in idx])
 
 
-def fit_logistic(train, features=MODEL_FEATURES):
-    model = Pipeline(
+def build_logistic(balanced=True):
+    return Pipeline(
         [
             ("scale", StandardScaler()),
-            ("clf", LogisticRegression(max_iter=2000, class_weight="balanced")),
+            ("clf", LogisticRegression(max_iter=2000, class_weight="balanced" if balanced else None)),
         ]
     )
+
+
+def fit_logistic(train, balanced=True, features=MODEL_FEATURES):
+    model = build_logistic(balanced)
     model.fit(train[features], train["suppressed"])
     return model
 
