@@ -69,7 +69,7 @@ def exposure_response(panel):
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     for ax, col, label, edges in [
         (axes[0], "heat_index_f", "Heat index (F)", np.arange(40, 115, 5)),
-        (axes[1], "pm25", "PM2.5 (ug/m3)", np.arange(0, 90, 5)),
+        (axes[1], "aqi", "Air Quality Index", np.arange(0, 320, 20)),
     ]:
         binned = pd.cut(df[col], edges)
         rate = df.groupby(binned, observed=True)["suppressed"].mean()
@@ -85,9 +85,9 @@ def exposure_response(panel):
 def smoke_event(panel, start="2023-06-05", end="2023-06-12"):
     df = panel[(panel["ts_local"] >= start) & (panel["ts_local"] < end)]
     fig, ax1 = plt.subplots(figsize=(9, 4))
-    ax1.plot(df["ts_local"], df["pm25"], color="#a33", label="PM2.5")
-    ax1.set_ylabel("PM2.5 (ug/m3)", color="#a33")
-    ax1.axhline(config.PM25_UNSAFE, ls="--", color="#a33", lw=1)
+    ax1.plot(df["ts_local"], df["aqi"], color="#a33", label="AQI")
+    ax1.set_ylabel("Air Quality Index", color="#a33")
+    ax1.axhline(config.AQI_UNSAFE, ls="--", color="#a33", lw=1)
     ax2 = ax1.twinx()
     ax2.plot(df["ts_local"], df["rides_total"], color="#36c", alpha=0.8, label="Rides")
     ax2.set_ylabel("Hourly rides", color="#36c")
