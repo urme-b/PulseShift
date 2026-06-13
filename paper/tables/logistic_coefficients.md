@@ -1,0 +1,11 @@
+| feature | coefficient |
+| --- | --- |
+| heat_index_f | -1.320 |
+| humidity | 0.843 |
+| visibility_mi | -0.583 |
+| hour_sin | -0.438 |
+| wind_mph | 0.381 |
+| smoke_haze | -0.200 |
+| is_weekend | 0.133 |
+| aqi | 0.097 |
+| hour_cos | 0.009 |
