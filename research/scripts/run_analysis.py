@@ -80,6 +80,16 @@ def main():
     plots.ram_by_month(reco, ram_stats["per_hour"])
     audit = safety.audit(reco)
 
+    event = panel[(panel["ts_local"] >= "2023-06-06") & (panel["ts_local"] < "2023-06-10")]
+    event_tbl = (
+        event.groupby(event["ts_local"].dt.date)
+        .agg(aqi=("aqi", "max"), rides=("rides_total", "sum"), expected=("expected_rides", "sum"))
+        .reset_index()
+        .rename(columns={"ts_local": "date"})
+    )
+    event_tbl["rides_vs_expected"] = (event_tbl["rides"] / event_tbl["expected"]).round(2)
+    _write_table(event_tbl, "smoke_event")
+
     by_season = equity.strata_metrics(test, "season")
     by_daytype = equity.strata_metrics(test, "daytype")
     burden = equity.rider_burden(panel)

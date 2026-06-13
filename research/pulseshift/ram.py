@@ -25,7 +25,7 @@ def recommend(panel, risk_col="risk", window=config.SHIFT_WINDOW_H):
         air = day["aqi"].to_numpy()
         for i in range(len(day)):
             near = np.abs(hours - hours[i]) <= window
-            feasible = near & safe
+            feasible = near & safe       # stay within the safe envelope
             if not feasible.any():
                 actions.append("cancel")
                 targets.append(np.nan)
@@ -35,7 +35,13 @@ def recommend(panel, risk_col="risk", window=config.SHIFT_WINDOW_H):
                 continue
             cand = np.where(feasible)[0]
             best = cand[np.argmin(risk[cand])]
-            actions.append("keep" if best == i and safe[i] else "shift")
+            if not safe[i]:
+                action = "shift"               # must leave an unsafe hour
+            elif best == i or (risk[i] - risk[best]) < config.MIN_RISK_BENEFIT:
+                action, best = "keep", i       # benefit too small to bother
+            else:
+                action = "shift"
+            actions.append(action)
             targets.append(hours[best])
             target_risk.append(risk[best])
             t_heat.append(heat[best])
