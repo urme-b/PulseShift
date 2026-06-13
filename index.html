@@ -1,404 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PulseShift</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%232d6a73'/%3E%3Cpath d='M18 40c6-14 12-20 28-24c-8 10-10 20-6 30c-8-4-14-5-22-6z' fill='%23f6c6a6'/%3E%3C/svg%3E"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">PulseShift</p>
-          <h1>Organizer first climate session retention</h1>
-          <p class="hero-text">
-            Score climate driven suppression risk for a planned session and rank
-            the safest way to preserve meaningful activity.
-          </p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PulseShift</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>PulseShift</h1>
+      <p class="tag">Will climate stress suppress your outdoor session? A calibrated forecast and the safest way to keep it.</p>
+    </header>
+
+    <section class="panel">
+      <form id="form">
+        <div class="grid">
+          <label>Temperature (°F)
+            <input type="number" id="temp" value="85" min="0" max="130" step="1" />
+          </label>
+          <label>Humidity (%)
+            <input type="number" id="humidity" value="55" min="1" max="100" step="1" />
+          </label>
+          <label>Air Quality Index
+            <input type="number" id="aqi" value="60" min="0" max="500" step="1" />
+          </label>
+          <label>Wind (mph)
+            <input type="number" id="wind" value="6" min="0" max="60" step="1" />
+          </label>
+          <label>Start hour
+            <select id="hour"></select>
+          </label>
+          <label class="check"><input type="checkbox" id="weekend" /> Weekend</label>
+          <label class="check"><input type="checkbox" id="smoke" /> Wildfire smoke / haze</label>
         </div>
-        <div class="hero-panel">
-          <p class="hero-panel-label">Current system scope</p>
-          <ul class="hero-list">
-            <li>Heat and smoke first</li>
-            <li>Run clubs and outdoor groups</li>
-            <li>Safe action ranking</li>
-          </ul>
-          <div class="db-status">
-            <p class="hero-panel-label">Database</p>
-            <p id="db-state" class="db-value">Checking</p>
-            <p id="db-detail" class="db-copy">Connecting to local SQLite</p>
-          </div>
-        </div>
-      </header>
+        <button type="button" id="live" class="ghost">Use live DC weather</button>
+      </form>
+    </section>
 
-      <main class="workspace">
-        <section class="panel form-panel">
-          <div class="panel-head">
-            <h2>Planned session</h2>
-            <p>Set the conditions the organizer is facing right now.</p>
-          </div>
+    <section class="result" id="result" hidden>
+      <div class="risk" id="risk">
+        <span class="pct" id="pct">—</span>
+        <span class="band" id="band">—</span>
+      </div>
+      <p class="reco" id="reco"></p>
+      <p class="detail" id="detail"></p>
+    </section>
 
-          <form id="session-form" class="session-form">
-            <div class="field-grid">
-              <label class="field">
-                <span>Session name</span>
-                <input name="sessionName" type="text" value="Tuesday club run" />
-              </label>
+    <footer>
+      <span id="meta"></span>
+      <a href="https://github.com/urme-b/PulseShift">Code &amp; paper</a>
+    </footer>
+  </main>
 
-              <label class="field">
-                <span>Start time</span>
-                <input name="startTime" type="time" value="18:00" />
-              </label>
-
-              <label class="field">
-                <span>Duration minutes</span>
-                <input
-                  name="durationMinutes"
-                  type="number"
-                  min="15"
-                  max="240"
-                  value="60"
-                />
-              </label>
-
-              <label class="field">
-                <span>Effort level</span>
-                <select name="effortLevel">
-                  <option value="easy">Easy</option>
-                  <option value="moderate" selected>Moderate</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span>Temperature F</span>
-                <input name="tempF" type="number" min="20" max="130" value="96" />
-              </label>
-
-              <label class="field">
-                <span>Humidity percent</span>
-                <input
-                  name="humidity"
-                  type="number"
-                  min="5"
-                  max="100"
-                  value="62"
-                />
-              </label>
-
-              <label class="field">
-                <span>AQI</span>
-                <input name="aqi" type="number" min="0" max="500" value="92" />
-              </label>
-
-              <label class="field">
-                <span>Smoke alert</span>
-                <select name="smokeAlert">
-                  <option value="no" selected>No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span>Flexible start window</span>
-                <select name="flexibleStartMinutes">
-                  <option value="0">0 minutes</option>
-                  <option value="30">30 minutes</option>
-                  <option value="60" selected>60 minutes</option>
-                  <option value="90">90 minutes</option>
-                </select>
-              </label>
-            </div>
-
-            <section class="source-panel">
-              <div class="section-head section-head-tight">
-                <h3>Official conditions import</h3>
-              </div>
-              <div class="field-grid">
-                <label class="field">
-                  <span>Latitude</span>
-                  <input
-                    name="latitude"
-                    type="number"
-                    step="0.0001"
-                    value="40.7128"
-                  />
-                </label>
-
-                <label class="field">
-                  <span>Longitude</span>
-                  <input
-                    name="longitude"
-                    type="number"
-                    step="0.0001"
-                    value="-74.0060"
-                  />
-                </label>
-              </div>
-              <div class="source-actions">
-                <button
-                  id="fetch-weather-button"
-                  type="button"
-                  class="secondary-button"
-                >
-                  Pull official conditions
-                </button>
-                <p id="source-status" class="source-copy">
-                  Use official NOAA weather and AirNow AQI to fill conditions.
-                </p>
-              </div>
-            </section>
-
-            <div class="toggle-grid">
-              <label class="toggle">
-                <input name="indoorAvailable" type="checkbox" checked />
-                <span>Indoor option available</span>
-              </label>
-              <label class="toggle">
-                <input name="alternativeRouteAvailable" type="checkbox" checked />
-                <span>Alternative route available</span>
-              </label>
-              <label class="toggle">
-                <input name="shadeAvailable" type="checkbox" checked />
-                <span>Shade friendly route available</span>
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="primary-button">Rank actions</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="panel output-panel">
-          <div class="panel-head">
-            <h2>Decision output</h2>
-            <p>Use one action, one reason, one fallback.</p>
-          </div>
-
-          <div class="summary-grid">
-            <article class="summary-card">
-              <p class="summary-label">Suppression risk</p>
-              <p id="risk-band" class="summary-value">Loading</p>
-              <p id="risk-score" class="summary-detail"></p>
-            </article>
-            <article class="summary-card">
-              <p class="summary-label">Expected minutes kept</p>
-              <p id="expected-minutes" class="summary-value">Loading</p>
-              <p id="heat-smoke" class="summary-detail"></p>
-            </article>
-            <article class="summary-card summary-card-accent">
-              <p class="summary-label">Best action</p>
-              <p id="best-action" class="summary-value">Loading</p>
-              <p id="best-action-detail" class="summary-detail"></p>
-            </article>
-          </div>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Primary recommendation</h3>
-            </div>
-            <div id="top-recommendation" class="recommendation-card"></div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Risk drivers</h3>
-            </div>
-            <ul id="risk-drivers" class="driver-list"></ul>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Action ranking</h3>
-            </div>
-            <div class="table-wrap">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>Action</th>
-                    <th>Risk</th>
-                    <th>Expected minutes</th>
-                    <th>RAM</th>
-                    <th>Safety</th>
-                  </tr>
-                </thead>
-                <tbody id="ranking-body"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Recent saved evaluations</h3>
-            </div>
-            <div class="table-wrap">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>Session</th>
-                    <th>Saved</th>
-                    <th>Risk</th>
-                    <th>Best action</th>
-                    <th>RAM</th>
-                  </tr>
-                </thead>
-                <tbody id="history-body"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>System stats</h3>
-            </div>
-            <div id="stats-summary" class="stats-grid">
-              <article class="summary-card">
-                <p class="summary-label">Saved evaluations</p>
-                <p class="summary-value">0</p>
-                <p class="summary-detail">Open the local server to load stats</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">Average RAM</p>
-                <p class="summary-value">0 min</p>
-                <p class="summary-detail">No saved evaluation stats yet</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">High risk share</p>
-                <p class="summary-value">0%</p>
-                <p class="summary-detail">Saved sessions only</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">Official imports</p>
-                <p class="summary-value">0</p>
-                <p class="summary-detail">Combined NOAA and AirNow saves</p>
-              </article>
-            </div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Recommendation mix</h3>
-            </div>
-            <div class="table-wrap">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>Best action</th>
-                    <th>Count</th>
-                    <th>Share</th>
-                    <th>Avg RAM</th>
-                  </tr>
-                </thead>
-                <tbody id="stats-actions-body">
-                  <tr class="empty-row">
-                    <td colspan="4">Open the local server to load recommendation stats</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Dataset layer</h3>
-            </div>
-            <div id="dataset-summary" class="stats-grid">
-              <article class="summary-card">
-                <p class="summary-label">Evaluation rows</p>
-                <p class="summary-value">0</p>
-                <p class="summary-detail">Open the local server to load clean dataset exports</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">Official condition rows</p>
-                <p class="summary-value">0</p>
-                <p class="summary-detail">Combined NOAA and AirNow import batches</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">Evaluation columns</p>
-                <p class="summary-value">21</p>
-                <p class="summary-detail">Analysis ready session features and outputs</p>
-              </article>
-              <article class="summary-card">
-                <p class="summary-label">Condition columns</p>
-                <p class="summary-value">28</p>
-                <p class="summary-detail">Forecast and AQI fields in one clean table</p>
-              </article>
-            </div>
-            <div class="dataset-actions">
-              <a
-                id="evaluation-export-link"
-                class="secondary-button button-link button-link-disabled"
-                href="#"
-                aria-disabled="true"
-              >
-                Download evaluations CSV
-              </a>
-              <a
-                id="conditions-export-link"
-                class="secondary-button button-link button-link-disabled"
-                href="#"
-                aria-disabled="true"
-              >
-                Download official conditions CSV
-              </a>
-            </div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Latest official weather snapshot</h3>
-            </div>
-            <div id="weather-snapshot" class="recommendation-card"></div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Latest official AQI snapshot</h3>
-            </div>
-            <div id="aqi-snapshot" class="recommendation-card"></div>
-          </section>
-
-          <section class="insight-block">
-            <div class="section-head">
-              <h3>Source stack</h3>
-            </div>
-            <div class="table-wrap">
-              <table class="ranking-table">
-                <thead>
-                  <tr>
-                    <th>Source</th>
-                    <th>Provider</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Fit</th>
-                  </tr>
-                </thead>
-                <tbody id="sources-body"></tbody>
-              </table>
-            </div>
-          </section>
-        </section>
-      </main>
-    </div>
-
-    <script>
-      const script = document.createElement("script");
-      script.src =
-        window.location.protocol === "file:"
-          ? "./src/app.bundle.js"
-          : "./src/app.js";
-
-      if (window.location.protocol !== "file:") {
-        script.type = "module";
-      }
-
-      document.body.append(script);
-    </script>
-  </body>
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
 </html>
