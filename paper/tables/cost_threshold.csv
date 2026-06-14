@@ -1,0 +1,2 @@
+best_threshold,implied_cost_ratio,net_benefit,sensitivity,specificity,flagged_share
+0.02,0.02,0.0139,0.975,0.494,0.518
