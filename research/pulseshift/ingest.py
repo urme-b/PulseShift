@@ -75,7 +75,6 @@ def load_weather():
         "DATE",
         "HourlyDryBulbTemperature",
         "HourlyRelativeHumidity",
-        "HourlyDewPointTemperature",
         "HourlyWindSpeed",
         "HourlyVisibility",
         "HourlyPrecipitation",
@@ -98,8 +97,7 @@ def load_weather():
     lcd["smoke_haze"] = (
         lcd["HourlyPresentWeatherType"].astype(str).str.contains("HZ|FU|smoke|haze", case=False, na=False)
     ).astype(int)
-    for col in ["HourlyDryBulbTemperature", "HourlyRelativeHumidity", "HourlyDewPointTemperature",
-                "HourlyWindSpeed", "HourlyVisibility"]:
+    for col in ["HourlyDryBulbTemperature", "HourlyRelativeHumidity", "HourlyWindSpeed", "HourlyVisibility"]:
         lcd[col] = _to_numeric(lcd[col])
     # precipitation: trace/blank read as 0
     lcd["HourlyPrecipitation"] = _to_numeric(lcd["HourlyPrecipitation"]).fillna(0)
@@ -111,7 +109,6 @@ def load_weather():
         .agg(
             temp_f=("HourlyDryBulbTemperature", "mean"),
             humidity=("HourlyRelativeHumidity", "mean"),
-            dewpoint_f=("HourlyDewPointTemperature", "mean"),
             wind_mph=("HourlyWindSpeed", "mean"),
             visibility_mi=("HourlyVisibility", "mean"),
             precip_in=("HourlyPrecipitation", "max"),
@@ -131,7 +128,7 @@ def load_aqi():
     if cache.exists():
         return pd.read_csv(cache, parse_dates=["date"])
 
-    use = ["State Name", "Date", "AQI", "Category", "Defining Parameter"]
+    use = ["State Name", "Date", "AQI"]
     parts = []
     for year in config.YEARS:
         path = _download(config.EPA_DAILY_AQI_URL.format(year=year), config.RAW / f"epa_aqi_{year}.zip")
@@ -142,7 +139,7 @@ def load_aqi():
     daily = (
         aqi.assign(date=pd.to_datetime(aqi["Date"]))
         .groupby("date")
-        .agg(aqi=("AQI", "max"), aqi_category=("Category", "first"), defining_parameter=("Defining Parameter", "first"))
+        .agg(aqi=("AQI", "max"))
         .reset_index()
     )
     cache.parent.mkdir(parents=True, exist_ok=True)

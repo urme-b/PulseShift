@@ -33,12 +33,12 @@ def build_panel(write=True):
         frame["ts_utc"] = pd.to_datetime(frame["ts_utc"])
 
     panel = bikes.merge(weather, on="ts_utc", how="inner").sort_values("ts_utc").reset_index(drop=True)
-    for col in ["temp_f", "humidity", "dewpoint_f", "wind_mph", "visibility_mi"]:
+    for col in ["temp_f", "humidity", "wind_mph", "visibility_mi"]:
         panel[col] = panel[col].interpolate(limit=3).ffill(limit=3).bfill(limit=3)
 
     panel["ts_local"] = panel["ts_utc"].dt.tz_localize("UTC").dt.tz_convert(config.LOCAL_TZ).dt.tz_localize(None)
     panel["date"] = panel["ts_local"].dt.normalize()
-    panel = panel.merge(aqi[["date", "aqi", "aqi_category", "defining_parameter"]], on="date", how="left")
+    panel = panel.merge(aqi[["date", "aqi"]], on="date", how="left")
     panel["aqi"] = panel["aqi"].ffill().bfill()
 
     panel = add_temporal(panel)
