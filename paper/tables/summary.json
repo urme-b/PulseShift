@@ -21,51 +21,63 @@
       "model": "Logistic (unweighted)",
       "n": 8204,
       "base_rate": 0.02462213554363725,
-      "auroc": 0.9209993293755769,
-      "auprc": 0.4517226186945686,
-      "brier": 0.023232531130397013,
-      "log_loss": 0.09873296713928137,
-      "ece": 0.046233707121415356,
-      "cal_slope": 1.2098363375165249,
-      "cal_intercept": -1.1804113969525134
+      "auroc": 0.935497561253251,
+      "auprc": 0.4818776767215592,
+      "brier": 0.02178913315455114,
+      "log_loss": 0.09716585539126461,
+      "ece": 0.04597139914791476,
+      "cal_slope": 1.050322954884147,
+      "cal_intercept": -1.5065170380419377
     },
     {
       "model": "Logistic (balanced)",
       "n": 8204,
       "base_rate": 0.02462213554363725,
-      "auroc": 0.9245133023674775,
-      "auprc": 0.4204881834476851,
-      "brier": 0.14238370588718163,
-      "log_loss": 0.44836684913662556,
-      "ece": 0.2710634636779087,
-      "cal_slope": 1.008767306929562,
-      "cal_intercept": -4.049820067964401
+      "auroc": 0.939395411048228,
+      "auprc": 0.4482056084323369,
+      "brier": 0.12954307095755244,
+      "log_loss": 0.4334470568678495,
+      "ece": 0.25501756034351025,
+      "cal_slope": 0.6920191766721543,
+      "cal_intercept": -3.835072256343212
     },
     {
       "model": "Logistic (balanced) + calibration",
       "n": 8204,
       "base_rate": 0.02462213554363725,
-      "auroc": 0.923902687694413,
-      "auprc": 0.4139161526936682,
-      "brier": 0.029813476097677823,
-      "log_loss": 0.11794737352653781,
-      "ece": 0.06394597144083827,
-      "cal_slope": 1.2547607395963671,
-      "cal_intercept": -1.5013464785693975
+      "auroc": 0.9385558932049165,
+      "auprc": 0.46331250665824913,
+      "brier": 0.029169597666429434,
+      "log_loss": 0.11456331655712668,
+      "ece": 0.0646119585653153,
+      "cal_slope": 1.1937716524714854,
+      "cal_intercept": -1.8190856257033843
+    },
+    {
+      "model": "Gradient boosting",
+      "n": 8204,
+      "base_rate": 0.02462213554363725,
+      "auroc": 0.934519773521966,
+      "auprc": 0.5248098341043856,
+      "brier": 0.025129067812261627,
+      "log_loss": 0.09801123151458291,
+      "ece": 0.0459954333714391,
+      "cal_slope": 0.9785106383607045,
+      "cal_intercept": -1.74951120044887
     }
   ],
   "served_ci": {
     "auroc": [
-      0.901,
-      0.94
+      0.917,
+      0.953
     ],
     "auprc": [
-      0.383,
-      0.519
+      0.411,
+      0.563
     ],
     "brier": [
-      0.021,
-      0.025
+      0.02,
+      0.024
     ],
     "ece": [
       0.043,
@@ -73,24 +85,24 @@
     ]
   },
   "ram": {
-    "recovered_rides": 82065.335775357,
-    "recovered_minutes": 1066849.365079641,
-    "lost_rides_no_adapt": 256062.53689294634,
-    "ram_pct_of_lost": 0.3204894271967108,
-    "share_shifted": 0.1379814724524622,
+    "recovered_rides": 94154.2094133009,
+    "recovered_minutes": 1224004.7223729116,
+    "lost_rides_no_adapt": 259598.20055170593,
+    "ram_pct_of_lost": 0.36269207264611825,
+    "share_shifted": 0.13590931253047295,
     "share_cancel": 0.0006094588005850804,
-    "n_shifts": 1132,
-    "distinct_target_slots": 764
+    "n_shifts": 1115,
+    "distinct_target_slots": 755
   },
   "ram_pct_ci": [
-    0.291,
-    0.348
+    0.326,
+    0.403
   ],
   "safety": {
-    "n_shifts": 1132,
+    "n_shifts": 1115,
     "n_cancel": 5,
     "unsafe_recommendations": 0,
-    "mean_risk_reduction": 0.14297486520440666,
+    "mean_risk_reduction": 0.16344205294010147,
     "all_safe": true
   },
   "smoke_event": {
@@ -98,6 +110,21 @@
     "summer_weekday_days": 66,
     "pct_days_below_jun8": 0.09090909090909091,
     "summer_ratio_median": 0.9675397032225801
+  },
+  "event_study": {
+    "n_days": 1096,
+    "high_aqi_days_ge100": 21,
+    "aqi_effect_per_50": -0.0559,
+    "ci_low_per_50": -0.1086,
+    "ci_high_per_50": -0.0107
+  },
+  "cost_threshold": {
+    "best_threshold": 0.02,
+    "implied_cost_ratio": 0.02,
+    "net_benefit": 0.0139,
+    "sensitivity": 0.975,
+    "specificity": 0.494,
+    "flagged_share": 0.518
   },
   "rider_burden": [
     {
