@@ -85,17 +85,27 @@ function update() {
     : `Heat index ${Math.round(hi)}°F · AQI ${input.aqi}`;
 }
 
+function dcHourWeekend(iso) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour: "numeric", hour12: false, weekday: "short",
+  }).formatToParts(new Date(iso));
+  let hour = Number(parts.find((x) => x.type === "hour").value);
+  if (hour === 24) hour = 0;
+  const wd = parts.find((x) => x.type === "weekday").value;
+  return { hour, weekend: wd === "Sat" || wd === "Sun" };
+}
+
 function bestSafeHour(periods, aqi) {
   let best = null;
   for (const p of periods.slice(0, 24)) {
-    const d = new Date(p.startTime);
-    if (d.getHours() < 6 || d.getHours() > 21) continue;
+    const { hour, weekend } = dcHourWeekend(p.startTime);
+    if (hour < 6 || hour > 21) continue;
     const rh = p.relativeHumidity && p.relativeHumidity.value != null ? p.relativeHumidity.value : 50;
     const pop = p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value != null ? p.probabilityOfPrecipitation.value : 0;
     const hi = heatIndex(p.temperature, rh);
     if (hi >= M.safety.heat_unsafe_f || aqi >= M.safety.aqi_unsafe) continue;
-    const r = risk({ temp: p.temperature, humidity: rh, aqi, wind: parseInt(p.windSpeed, 10) || 0, precip: (pop / 100) * 0.1, hour: d.getHours(), weekend: d.getDay() === 0 || d.getDay() === 6, smoke: false });
-    if (!best || r < best.risk) best = { hour: d.getHours(), risk: r };
+    const r = risk({ temp: p.temperature, humidity: rh, aqi, wind: parseInt(p.windSpeed, 10) || 0, precip: (pop / 100) * 0.1, hour, weekend, smoke: false });
+    if (!best || r < best.risk) best = { hour, risk: r };
   }
   return best;
 }
