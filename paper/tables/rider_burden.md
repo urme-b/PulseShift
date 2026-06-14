@@ -1,4 +1,4 @@
 | rider_type | active_hours | suppression_rate |
 | --- | --- | --- |
-| member | 23101 | 0.058 |
-| casual | 21875 | 0.102 |
+| member | 22735 | 0.051 |
+| casual | 21692 | 0.095 |
