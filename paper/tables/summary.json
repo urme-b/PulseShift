@@ -118,14 +118,29 @@
     "ci_low_per_50": -0.1086,
     "ci_high_per_50": -0.0107
   },
-  "cost_threshold": {
-    "best_threshold": 0.02,
-    "implied_cost_ratio": 0.02,
-    "net_benefit": 0.0139,
-    "sensitivity": 0.975,
-    "specificity": 0.494,
-    "flagged_share": 0.518
-  },
+  "cost_threshold": [
+    {
+      "cost_ratio_miss_to_flag": 5,
+      "threshold": 0.167,
+      "sensitivity": 0.792,
+      "specificity": 0.911,
+      "flagged_share": 0.106
+    },
+    {
+      "cost_ratio_miss_to_flag": 10,
+      "threshold": 0.091,
+      "sensitivity": 0.891,
+      "specificity": 0.813,
+      "flagged_share": 0.205
+    },
+    {
+      "cost_ratio_miss_to_flag": 20,
+      "threshold": 0.048,
+      "sensitivity": 0.946,
+      "specificity": 0.698,
+      "flagged_share": 0.318
+    }
+  ],
   "rider_burden": [
     {
       "rider_type": "member",
