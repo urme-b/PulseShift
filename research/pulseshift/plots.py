@@ -24,7 +24,7 @@ def _save(fig, name):
 def reliability_plot(y, raw, calibrated):
     fig, ax = plt.subplots(figsize=(5, 5))
     ax.plot([0, 1], [0, 1], "--", color="gray", lw=1, label="Perfect")
-    for prob, lab, color in [(raw, "Logistic", "#c44"), (calibrated, "Calibrated", "#2a7")]:
+    for prob, lab, color in [(raw, "Balanced", "#c44"), (calibrated, "Unweighted (served)", "#2a7")]:
         mp, fp = reliability(y, prob, n_bins=10)
         ax.plot(mp, fp, "o-", color=color, label=lab)
     ax.set_xlabel("Predicted suppression probability")
