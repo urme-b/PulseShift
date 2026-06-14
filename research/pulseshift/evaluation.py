@@ -33,7 +33,7 @@ def expected_calibration_error(y_true, y_prob, n_bins=10):
     return float(ece)
 
 
-def bootstrap_ci(y_true, y_prob, fn, n=1000, seed=0, alpha=0.05):
+def bootstrap_ci(y_true, y_prob, fn, n=1000, seed=0, alpha=0.05, require_two_classes=False):
     """Percentile bootstrap CI for a (y_true, y_prob) metric."""
     rng = np.random.default_rng(seed)
     y_true = np.asarray(y_true)
@@ -42,7 +42,7 @@ def bootstrap_ci(y_true, y_prob, fn, n=1000, seed=0, alpha=0.05):
     vals = []
     for _ in range(n):
         s = rng.choice(idx, size=len(idx), replace=True)
-        if len(np.unique(y_true[s])) < 2:
+        if require_two_classes and len(np.unique(y_true[s])) < 2:
             continue
         vals.append(fn(y_true[s], y_prob[s]))
     lo, hi = np.percentile(vals, [100 * alpha / 2, 100 * (1 - alpha / 2)])
