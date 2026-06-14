@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="PulseShift forecasts whether heat, cold, wind, or smoke will suppress an outdoor session, and the safest way to keep it — a calibrated model trained on real Washington DC data, running in your browser." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='8' cy='8' r='7' fill='%2338bdf8'/></svg>" />
   <title>PulseShift</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -41,7 +43,7 @@
       </form>
     </section>
 
-    <section class="result" id="result" hidden>
+    <section class="result" id="result" aria-live="polite" hidden>
       <div class="risk" id="risk">
         <span class="pct" id="pct">—</span>
         <span class="band" id="band">—</span>
