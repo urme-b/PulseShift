@@ -55,13 +55,22 @@ function recommend(input, hi, p, unsafe) {
   return "Conditions look favorable — keep your plan.";
 }
 
+function num(id) {
+  const e = $(id);
+  let v = e.valueAsNumber;   // NaN when the field is empty or invalid
+  if (Number.isNaN(v)) v = Number(e.defaultValue) || 0;
+  const min = e.min !== "" ? Number(e.min) : -Infinity;
+  const max = e.max !== "" ? Number(e.max) : Infinity;
+  return Math.min(max, Math.max(min, v));
+}
+
 function read() {
   return {
-    temp: Number($("temp").value),
-    humidity: Number($("humidity").value),
-    aqi: Number($("aqi").value),
-    wind: Number($("wind").value),
-    precip: Number($("precip").value),
+    temp: num("temp"),
+    humidity: num("humidity"),
+    aqi: num("aqi"),
+    wind: num("wind"),
+    precip: num("precip"),
     hour: Number($("hour").value),
     weekend: $("weekend").checked,
     smoke: $("smoke").checked,
