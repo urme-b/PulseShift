@@ -33,6 +33,7 @@ def main():
             "active_hours": int(len(work)),
             "auroc_2024": round(float(roc_auc_score(test["suppressed"], p)), 3),
             "brier_2024": round(float(brier_score_loss(test["suppressed"], p)), 3),
+            "metrics_note": "served coefficients are refit on all data; auroc_2024/brier_2024 are the 2022-2023 -> 2024 holdout estimate for the unweighted variant",
         },
     }
 

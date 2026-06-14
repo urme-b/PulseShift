@@ -65,44 +65,45 @@ def main():
     )
     _write_table(comparison, "model_comparison")
 
+    # served model = unweighted logistic; report its CIs
     yt = test["suppressed"].to_numpy()
     ci = {
-        "auroc": bootstrap_ci(yt, p_cal, roc_auc_score),
-        "auprc": bootstrap_ci(yt, p_cal, average_precision_score),
-        "brier": bootstrap_ci(yt, p_cal, brier_score_loss),
-        "ece": bootstrap_ci(yt, p_cal, lambda y, p: expected_calibration_error(np.asarray(y), np.asarray(p))),
+        "auroc": bootstrap_ci(yt, p_unw, roc_auc_score, require_two_classes=True),
+        "auprc": bootstrap_ci(yt, p_unw, average_precision_score),
+        "brier": bootstrap_ci(yt, p_unw, brier_score_loss),
+        "ece": bootstrap_ci(yt, p_unw, lambda y, p: expected_calibration_error(np.asarray(y), np.asarray(p))),
     }
     _write_table(
         pd.DataFrame([{"metric": k, "low": lo, "high": hi} for k, (lo, hi) in ci.items()]),
-        "calibrated_ci",
+        "served_ci",
     )
 
     coef = pd.DataFrame(
-        {"feature": MODEL_FEATURES, "coefficient": logit.named_steps["clf"].coef_[0]}
+        {"feature": MODEL_FEATURES, "coefficient": logit_unw.named_steps["clf"].coef_[0]}
     ).sort_values("coefficient", key=abs, ascending=False)
     _write_table(coef, "logistic_coefficients")
     _write_table(_exposure_table(work), "exposure_response")
 
     thresholds = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-    nb_model, nb_all = decision.net_benefit(test["suppressed"], p_cal, thresholds)
+    nb_model, nb_all = decision.net_benefit(test["suppressed"], p_unw, thresholds)
     _write_table(
         pd.DataFrame({"threshold": thresholds, "model": nb_model, "adapt_all": nb_all}),
         "decision_curve",
     )
 
-    plots.reliability_plot(test["suppressed"].to_numpy(), p_bal, p_cal)
+    plots.reliability_plot(test["suppressed"].to_numpy(), p_bal, p_unw)
     plots.roc_plot(
         {
             "Climatology": (test["suppressed"], p_clim, comparison.iloc[0]["auroc"]),
-            "Logistic": (test["suppressed"], p_bal, comparison.iloc[2]["auroc"]),
-            "Calibrated": (test["suppressed"], p_cal, comparison.iloc[3]["auroc"]),
+            "Balanced": (test["suppressed"], p_bal, comparison.iloc[2]["auroc"]),
+            "Unweighted (served)": (test["suppressed"], p_unw, comparison.iloc[1]["auroc"]),
         }
     )
-    plots.decision_plot(test["suppressed"].to_numpy(), p_cal)
+    plots.decision_plot(test["suppressed"].to_numpy(), p_unw)
     plots.exposure_response(work)
     plots.smoke_event(panel)
 
-    test = test.assign(risk=p_cal)
+    test = test.assign(risk=p_unw)
     reco = ram.recommend(test)
     ram_stats = ram.ram_table(reco)
     plots.ram_by_month(reco, ram_stats["per_hour"])
@@ -139,7 +140,7 @@ def main():
     daily_ratio = summer.groupby(summer["ts_local"].dt.date).apply(
         lambda d: d["rides_total"].sum() / d["expected_rides"].sum()
     )
-    jun8 = float(event_tbl.loc[event_tbl["date"].astype(str) == "2023-06-08", "rides_vs_expected"].iloc[0])
+    jun8 = float(daily_ratio.loc[pd.Timestamp("2023-06-08").date()])
     smoke_context = {
         "jun8_ratio": jun8,
         "summer_weekday_days": int(len(daily_ratio)),
@@ -159,8 +160,7 @@ def main():
         _, lab = label_suppression(work, ratio=ratio)
         tmp = work.assign(suppressed=lab)
         tr, te = temporal_split(tmp)
-        m = calibrate_cv(tr, method="isotonic", cv=5, balanced=True)
-        p = m.predict_proba(te[MODEL_FEATURES])[:, 1]
+        p = predict(fit_logistic(tr, balanced=False), te)
         row = {"ratio": ratio, "base_rate": float(lab.mean())}
         row.update({k: metrics(te["suppressed"], p)[k] for k in ["auroc", "brier", "ece"]})
         sens.append(row)
@@ -173,7 +173,7 @@ def main():
         "test_rows": int(len(test)),
         "test_base_rate": float(test["suppressed"].mean()),
         "model_comparison": comparison.to_dict(orient="records"),
-        "calibrated_ci": ci,
+        "served_ci": ci,
         "ram": {k: v for k, v in ram_stats.items() if k != "per_hour"},
         "ram_pct_ci": ram_ci,
         "safety": audit,
