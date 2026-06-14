@@ -36,19 +36,23 @@ for participation.
   builds the dataset, another trains, evaluates, and exports the model.
 - **Data** — Capital Bikeshare trip history, NOAA Local Climatological Data (Reagan National), and
   EPA daily AQI, all public and pulled by the pipeline.
+- **Tests/CI** — `pytest` guards the heat index, the leak-free label, the safety policy, and
+  model-export parity; GitHub Actions runs them on every push.
 
 ## Results
 
 Washington DC, 2022–2024, tested on a held-out 2024:
 
-- Weather and time of day push forecast AUROC from 0.69 to 0.92.
+- Weather and time of day push forecast AUROC from 0.69 to 0.94; a gradient-boosting model doesn't
+  beat the logistic, so the minimal model suffices.
 - Calibration is what makes it usable. Balanced class weights leave the model badly overconfident
-  (Brier 0.14, ECE 0.27); the unweighted model the app serves is well-calibrated (Brier 0.023).
-- Cold drives most suppression, not heat — hot and smoky hours fall in summer, when ridership
-  peaks, so every exposure term loads negative. The June 2023 wildfire smoke (AQI 196) cut ridership
-  to 0.76× of normal, though several non-smoke days dipped further.
-- Shifting sessions to a safer hour could recover up to ~32% of otherwise-lost activity (an upper
-  bound), never pointing at an unsafe hour.
+  (Brier 0.13, ECE 0.26); the unweighted model the app serves is well-calibrated (Brier 0.022).
+- With precipitation and a cold-stress term, the model recovers correctly-signed drivers (rain and
+  cold both raise suppression); heat still loads negative through seasonal confounding.
+- Controlling for weather and season across 1,096 days, +50 AQI ≈ a 5.6-point drop in the daily ride
+  ratio (95% CI 1.1–10.9). The June 2023 wildfire smoke (AQI 196) cut ridership to 0.76× of normal.
+- A safety-constrained time-shift policy could recover up to ~36% of otherwise-lost activity (upper
+  bound), never pointing at an unsafe hour. The framework also transfers to Seoul (AUROC 0.94).
 
 Full write-up in [`paper/paper.md`](paper/paper.md).
 
@@ -61,15 +65,20 @@ cd research
 PYTHONPATH=. ../.venv/bin/python scripts/build_data.py     # download + build the dataset
 PYTHONPATH=. ../.venv/bin/python scripts/run_analysis.py   # figures + tables
 PYTHONPATH=. ../.venv/bin/python scripts/train_model.py    # re-export model.js
+PYTHONPATH=. ../.venv/bin/python scripts/validate_seoul.py # external check (Seoul)
+PYTHONPATH=. ../.venv/bin/pytest tests/ -q                 # tests
 ```
 
 ## Roadmap
 
-- Hourly air quality and a live AQI feed alongside the live weather pull.
-- More cities, so the model isn't tied to one ridership pattern.
-- Per-rider and per-activity personalization rather than a single city-wide forecast.
-- Richer adaptations: route and intensity changes, not just time shifts.
-- A small hosted API for apps that want the forecast without the page.
+Recently added: precipitation + nonlinear temperature, a gradient-boosting comparator, bootstrap
+CIs, a multi-day AQI event study, a cost-sensitive operating point, Seoul as a second city, a
+"best safe hour today" view, and tests + CI. Still open:
+
+- Hourly air quality (EPA's hourly feed is throttled too hard to pull at a practical rate).
+- Neighbourhood/demographic equity — needs a spatial re-aggregation of trips and a census join.
+- Per-rider personalization and a small hosted API.
+- A Zenodo deposit for a citable dataset+code DOI.
 
 ## Layout
 
