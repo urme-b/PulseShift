@@ -1,47 +1,72 @@
 # PulseShift research pipeline
 
-Reproducible analysis behind the paper: forecasting climate-driven suppression of
-physical activity in Washington DC, and ranking behaviour-preserving adaptations.
+The analysis and model behind PulseShift: build an hourly dataset for Washington DC from public
+sources, fit and evaluate a suppression-forecasting model, and export the model used by the app.
+
+## Requirements
+
+Python 3.9 or newer.
+
+## Installation
+
+```
+python3 -m venv ../.venv
+../.venv/bin/pip install -r requirements.txt
+```
+
+## Usage
+
+Run from the `research/` directory:
+
+```
+PYTHONPATH=. ../.venv/bin/python scripts/build_data.py     # download sources, build the panel
+PYTHONPATH=. ../.venv/bin/python scripts/run_analysis.py   # write figures and tables to ../paper
+PYTHONPATH=. ../.venv/bin/python scripts/train_model.py    # export ../model.js and ../model.json
+PYTHONPATH=. ../.venv/bin/python scripts/validate_seoul.py # cross-city check
+PYTHONPATH=. ../.venv/bin/pytest tests/ -q                 # tests
+```
+
+The processed panel (`data/processed/panel.csv.gz`) is committed, so analysis and tests run without
+re-downloading the raw data.
+
+## Configuration
+
+Study years, weather station, county code, and the label and safety thresholds are defined in
+`pulseshift/config.py`. No API keys are required.
 
 ## Data
 
-All sources are public and downloaded by the pipeline. Nothing is hand-edited.
+All sources are public and downloaded by the pipeline; nothing is hand-edited.
 
-| Source | What | Access |
-| --- | --- | --- |
-| Capital Bikeshare trip history | Hourly outdoor-activity volume (2022-2024) | public S3 bucket |
-| NOAA Local Climatological Data (DCA) | Hourly temperature, humidity, dew point, wind, visibility, smoke/haze | NCEI open data |
-| EPA AQS hourly PM2.5 | Hourly air quality for DC monitors | EPA AirData |
+| Source | Provides |
+| --- | --- |
+| Capital Bikeshare trip history | Hourly outdoor-activity volume |
+| NOAA Local Climatological Data (Reagan National) | Hourly temperature, humidity, wind, visibility, precipitation, smoke/haze |
+| EPA AirData daily AQI (District of Columbia) | Daily air quality |
 
-Activity, weather, and air quality are aligned on UTC, then expressed in local time.
-The suppression outcome is constructed (no public dataset labels skipped sessions): an
-active hour is *suppressed* when observed ridership falls below half of its weather-free
-temporal climatology (`season x daytype x hour`). See `pulseshift/panel.py`.
-
-## Run
-
-```bash
-python3 -m venv ../.venv
-../.venv/bin/pip install -r requirements.txt
-
-PYTHONPATH=. ../.venv/bin/python scripts/build_data.py     # download + build panel
-PYTHONPATH=. ../.venv/bin/python scripts/run_analysis.py   # models, figures, tables
-```
-
-Outputs land in `../paper/figures` and `../paper/tables` (including `summary.json`).
+Activity (DST-aware local time) and weather (local standard time) are aligned on UTC; daily AQI is
+joined on the local calendar day. The suppression outcome is constructed, since no public dataset
+records skipped sessions: an active hour is suppressed when ridership falls below half of a
+weather-free `season x daytype x hour` climatology, fit on the training years only.
 
 ## Layout
 
 | Path | Purpose |
 | --- | --- |
-| `pulseshift/ingest.py` | Download and assemble the three real series |
+| `pulseshift/ingest.py` | Download and assemble the three source series |
 | `pulseshift/panel.py` | Merge, label suppression, write the analysis panel |
-| `pulseshift/features.py` | Heat index, AQI, temporal encodings |
-| `pulseshift/models.py` | Climatology baseline and logistic model |
+| `pulseshift/features.py` | Heat index, temperature hinges, temporal encodings |
+| `pulseshift/models.py` | Climatology baseline, logistic, and gradient-boosting models |
 | `pulseshift/calibration.py` | Probability calibration and reliability |
-| `pulseshift/evaluation.py` | Brier, log loss, AUROC, AUPRC, calibration slope |
+| `pulseshift/evaluation.py` | Discrimination and calibration metrics, bootstrap CIs |
 | `pulseshift/ram.py` | Time-shift adaptation and Recovered Active Minutes |
 | `pulseshift/decision.py` | Decision-curve net benefit |
 | `pulseshift/equity.py` | Subgroup stratification |
-| `pulseshift/safety.py` | Audit that adaptations never raise exposure |
+| `pulseshift/safety.py` | Audit that recommendations never raise exposure |
 | `pulseshift/plots.py` | Figures |
+| `scripts/` | Pipeline entry points |
+| `tests/` | Test suite |
+
+## License
+
+MIT; see the repository root.
