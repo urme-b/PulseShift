@@ -22,8 +22,8 @@ model we serve is well-calibrated (Brier 0.022, ECE 0.046). With precipitation a
 term, the served model recovers correctly-signed drivers (rain +0.40, cold +0.55 increase
 suppression), though heat still loads negative through seasonal confounding. Holding temperature,
 precipitation, and season fixed, each +50 AQI is associated with a 5.6-point drop in the daily ride
-ratio (95% CI 1.1–10.9), and the framework transfers to a second city, Seoul (AUROC 0.95 on a small
-held-out tail). A safety-constrained time-shift policy could recover up to
+ratio (95% CI 1.1–10.9), and the framework transfers to a second city, Seoul (AUROC 0.87 on a random
+hold-out). A safety-constrained time-shift policy could recover up to
 ~36% (95% CI 33–40%) of otherwise-lost activity while never recommending an unsafe hour; discretionary
 riders bear ~1.9× the burden of committed riders. **Conclusion.** A minimal but calibrated,
 safety-aware framework turns climate exposure into a usable, reproducible activity-retention decision;
@@ -157,18 +157,18 @@ The panel holds 26,288 city-hours (2022–2024); 24,354 clear the activity floor
 
 | Model | AUROC | AUPRC | Brier | ECE | Cal. slope / int. |
 | --- | --- | --- | --- | --- | --- |
-| Season-aware climatology | 0.69 | 0.05 | 0.027 | 0.053 | 1.04 / −1.14 |
-| Logistic (unweighted, served) | 0.94 | 0.48 | 0.022 | 0.046 | 1.05 / −1.51 |
-| Logistic (balanced) | 0.94 | 0.45 | 0.130 | 0.255 | 0.69 / −3.84 |
-| Logistic (balanced) + calibration | 0.94 | 0.46 | 0.029 | 0.065 | 1.19 / −1.82 |
-| Gradient boosting | 0.93 | 0.52 | 0.025 | 0.046 | 0.98 / −1.75 |
+| Season-aware climatology | 0.692 | 0.05 | 0.027 | 0.053 | 1.04 / −1.14 |
+| Logistic (unweighted, served) | 0.935 | 0.48 | 0.022 | 0.046 | 1.05 / −1.51 |
+| Logistic (balanced) | 0.939 | 0.45 | 0.130 | 0.255 | 0.69 / −3.84 |
+| Logistic (balanced) + calibration | 0.939 | 0.46 | 0.029 | 0.065 | 1.19 / −1.82 |
+| Gradient boosting | 0.935 | 0.52 | 0.025 | 0.046 | 0.98 / −1.75 |
 
 *Test year 2024, n = 8,204. Served-model 95% CIs: AUROC 0.92–0.95, AUPRC 0.41–0.56,
 Brier 0.020–0.024, ECE 0.043–0.049.*
 
 Environmental and temporal features lift AUROC from 0.69 (season-aware baseline) to 0.94 (Figure
 `roc`). Gradient
-boosting does not beat the logistic model on AUROC (0.93 vs 0.94; it edges AUPRC, 0.52 vs 0.48), confirming
+boosting ties the logistic model on AUROC (0.935 each; it edges AUPRC, 0.52 vs 0.48), confirming
 the minimal model captures the signal. But discrimination is not the point of a decision tool.
 Fitting with **balanced class weights** — a common default for imbalance — discriminates well yet is
 badly **over-confident**: Brier 0.130 (worse than the baseline's 0.027), ECE 0.255, calibration
@@ -214,10 +214,12 @@ in the colder months, when suppression is most common (Figure `ram_by_month`).
 
 Results are stable to the label threshold (Table `label_sensitivity`): across `rho` ∈ {0.4, 0.5, 0.6}
 the base rate moves from 3.8% to 8.9% while AUROC stays 0.92–0.95 and ECE ≤ 0.07. Performance holds
-across seasons (AUROC 0.90–0.96) and day types. **External validity:** applying the same framework to
-the Seoul Bike dataset (a different climate and hemisphere) yields AUROC 0.95 on a small leak-free
-held-out tail (n = 180; calibration is weaker on this short, high-suppression autumn window, ECE 0.12)
-(Table `seoul_validation`). **Equity:** over the full panel, casual (discretionary) riders are
+across seasons (AUROC 0.90–0.96) and day types. **External validity:** refitting the same pipeline on
+the Seoul Bike dataset (a different climate and hemisphere) and evaluating on a random 25% hold-out
+yields AUROC 0.87 with good calibration (ECE 0.02, n = 2,117, base rate 11.7%) (Table
+`seoul_validation`); a one-year panel cannot support a clean out-of-time tail, so this is a
+cross-city method check rather than a temporal forecast. **Equity:** over the full panel, casual
+(discretionary) riders are
 suppressed 9.5% of active hours versus 5.1% for members (≈1.9×) — the more committed the activity,
 the more it survives adverse conditions, which is exactly the population for whom adaptation support
 matters most.

@@ -52,8 +52,8 @@ Washington DC, 2022–2024, tested on a held-out 2024:
 - Controlling for weather and season across 1,096 days, +50 AQI ≈ a 5.6-point drop in the daily ride
   ratio (95% CI 1.1–10.9). The June 2023 wildfire smoke (AQI 196) cut ridership to 0.76× of normal.
 - A safety-constrained time-shift policy could recover up to ~36% of otherwise-lost activity (upper
-  bound), never pointing at an unsafe hour. The framework also transfers to Seoul (AUROC 0.95 on a
-  small held-out tail).
+  bound), never pointing at an unsafe hour. The framework also transfers to Seoul (AUROC 0.87 on a
+  random hold-out).
 
 Full write-up in [`paper/paper.md`](paper/paper.md).
 
