@@ -165,7 +165,8 @@ The panel holds 26,288 city-hours (2022–2024); 24,354 clear the activity floor
 *Test year 2024, n = 8,204. Served-model 95% CIs: AUROC 0.92–0.95, AUPRC 0.41–0.56,
 Brier 0.020–0.024, ECE 0.043–0.049.*
 
-Environmental and temporal features lift AUROC from 0.69 (season-aware baseline) to 0.94. Gradient
+Environmental and temporal features lift AUROC from 0.69 (season-aware baseline) to 0.94 (Figure
+`roc`). Gradient
 boosting matches the logistic model on AUROC (both 0.94; it edges AUPRC, 0.52 vs 0.48), confirming
 the minimal model captures the signal. But discrimination is not the point of a decision tool.
 Fitting with **balanced class weights** — a common default for imbalance — discriminates well yet is
@@ -203,7 +204,8 @@ activity that would otherwise be lost — about 94,154 rides, ≈1.22M rider-min
 rides lost under no adaptation. This is an upper bound under perfect demand transfer and uncapped
 target-hour capacity (the 1,115 shifts land in 755 distinct day–hour slots). The policy is
 conservative — it shifts 14% of hours and cancels 0.06% — and **safe by construction**: zero
-recommendations fall in unsafe conditions, and each shift lowers predicted risk by 0.16 on average.
+recommendations fall in unsafe conditions, and each shift lowers predicted risk by 0.16 on average. Recovered activity concentrates
+in the colder months, when suppression is most common (Figure `ram_by_month`).
 
 ### 6.4 Robustness, transfer, and subgroups
 
