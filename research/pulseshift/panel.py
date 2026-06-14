@@ -54,12 +54,12 @@ def build_panel(write=True):
 
     if write:
         config.PROCESSED.mkdir(parents=True, exist_ok=True)
-        panel.to_csv(config.PROCESSED / "panel.csv", index=False)
+        panel.to_csv(config.PROCESSED / "panel.csv.gz", index=False)
     return panel
 
 
 def load_panel():
-    path = config.PROCESSED / "panel.csv"
+    path = config.PROCESSED / "panel.csv.gz"
     if not path.exists():
         return build_panel()
     return pd.read_csv(path, parse_dates=["ts_utc", "ts_local"])
