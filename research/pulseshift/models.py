@@ -1,6 +1,7 @@
 """Climatology baseline and the logistic suppression model."""
 
 import numpy as np
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -41,6 +42,12 @@ def build_logistic(balanced=True):
 
 def fit_logistic(train, balanced=True, features=MODEL_FEATURES):
     model = build_logistic(balanced)
+    model.fit(train[features], train["suppressed"])
+    return model
+
+
+def fit_gbm(train, features=MODEL_FEATURES):
+    model = GradientBoostingClassifier(random_state=0)
     model.fit(train[features], train["suppressed"])
     return model
 
