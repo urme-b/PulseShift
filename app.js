@@ -38,7 +38,7 @@ function risk(input) {
   return 1 / (1 + Math.exp(-z));
 }
 
-function band(p) {
+function riskBand(p) {
   if (p < 0.15) return { label: "Low", cls: "low" };
   if (p < 0.35) return { label: "Moderate", cls: "moderate" };
   if (p < 0.6) return { label: "High", cls: "high" };
@@ -73,7 +73,7 @@ function update() {
   const hi = heatIndex(input.temp, input.humidity);
   const p = risk(input);
   const unsafe = hi >= M.safety.heat_unsafe_f || input.aqi >= M.safety.aqi_unsafe;
-  const b = unsafe ? { label: "Unsafe conditions", cls: "severe" } : band(p);
+  const b = unsafe ? { label: "Unsafe conditions", cls: "severe" } : riskBand(p);
 
   $("result").hidden = false;
   $("risk").className = "risk " + b.cls;
