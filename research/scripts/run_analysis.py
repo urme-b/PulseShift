@@ -4,13 +4,14 @@ import json
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import average_precision_score, brier_score_loss, confusion_matrix, roc_auc_score
 
 from pulseshift import config, decision, equity, plots, ram, safety
 from pulseshift.calibration import calibrate_cv
 from pulseshift.evaluation import bootstrap_ci, expected_calibration_error, metrics
 from pulseshift.features import MODEL_FEATURES
-from pulseshift.models import ClimatologyBaseline, fit_logistic, predict, temporal_split
+from pulseshift.models import ClimatologyBaseline, fit_gbm, fit_logistic, predict, temporal_split
 from pulseshift.panel import active, label_suppression, load_panel
 
 
@@ -54,6 +55,7 @@ def main():
     p_unw = predict(logit_unw, test)
     p_bal = predict(logit, test)
     p_cal = calibrated.predict_proba(test[MODEL_FEATURES])[:, 1]
+    p_gbm = predict(fit_gbm(train_all), test)
 
     comparison = pd.DataFrame(
         [
@@ -61,6 +63,7 @@ def main():
             {"model": "Logistic (unweighted)", **metrics(test["suppressed"], p_unw)},
             {"model": "Logistic (balanced)", **metrics(test["suppressed"], p_bal)},
             {"model": "Logistic (balanced) + calibration", **metrics(test["suppressed"], p_cal)},
+            {"model": "Gradient boosting", **metrics(test["suppressed"], p_gbm)},
         ]
     )
     _write_table(comparison, "model_comparison")
@@ -90,6 +93,22 @@ def main():
         pd.DataFrame({"threshold": thresholds, "model": nb_model, "adapt_all": nb_all}),
         "decision_curve",
     )
+
+    # cost-sensitive operating point: threshold maximizing net benefit
+    grid = np.linspace(0.02, 0.6, 59)
+    nbm, _ = decision.net_benefit(test["suppressed"], p_unw, grid)
+    best_t = float(grid[int(np.argmax(nbm))])
+    flag = p_unw >= best_t
+    tn, fp, fn, tp = confusion_matrix(yt, flag).ravel()
+    cost = {
+        "best_threshold": round(best_t, 3),
+        "implied_cost_ratio": round(best_t / (1 - best_t), 3),
+        "net_benefit": round(float(np.max(nbm)), 4),
+        "sensitivity": round(tp / (tp + fn), 3),
+        "specificity": round(tn / (tn + fp), 3),
+        "flagged_share": round(float(flag.mean()), 3),
+    }
+    _write_table(pd.DataFrame([cost]), "cost_threshold")
 
     plots.reliability_plot(test["suppressed"].to_numpy(), p_bal, p_unw)
     plots.roc_plot(
@@ -148,6 +167,33 @@ def main():
         "summer_ratio_median": float(daily_ratio.median()),
     }
 
+    # multi-day AQI effect, controlling for weather and season (all days)
+    g = work.assign(date=work["ts_local"].dt.normalize()).groupby("date").agg(
+        rides=("rides_total", "sum"), expected=("expected_rides", "sum"), aqi=("aqi", "max"),
+        temp=("temp_f", "mean"), precip=("precip_in", "sum"), is_weekend=("is_weekend", "max"),
+        season=("season", "first"),
+    )
+    g = g[g["expected"] > 0]
+    y = (g["rides"] / g["expected"]).to_numpy()
+    X = pd.concat(
+        [g[["aqi", "temp", "precip", "is_weekend"]], pd.get_dummies(g["season"], prefix="s", drop_first=True)],
+        axis=1,
+    ).astype(float)
+    ai = list(X.columns).index("aqi")
+    base = LinearRegression().fit(X, y).coef_[ai]
+    rng2 = np.random.default_rng(0)
+    idx2 = np.arange(len(g))
+    cf = [LinearRegression().fit(X.iloc[s], y[s]).coef_[ai] for s in (rng2.choice(idx2, len(idx2), True) for _ in range(1000))]
+    lo, hi = np.percentile(cf, [2.5, 97.5])
+    event_study = {
+        "n_days": int(len(g)),
+        "high_aqi_days_ge100": int((g["aqi"] >= 100).sum()),
+        "aqi_effect_per_50": round(float(base * 50), 4),
+        "ci_low_per_50": round(float(lo * 50), 4),
+        "ci_high_per_50": round(float(hi * 50), 4),
+    }
+    _write_table(pd.DataFrame([event_study]), "event_study")
+
     by_season = equity.strata_metrics(test, "season")
     by_daytype = equity.strata_metrics(test, "daytype")
     burden = equity.rider_burden(panel)
@@ -178,6 +224,8 @@ def main():
         "ram_pct_ci": ram_ci,
         "safety": audit,
         "smoke_event": smoke_context,
+        "event_study": event_study,
+        "cost_threshold": cost,
         "rider_burden": burden.to_dict(orient="records"),
     }
     (config.TABLES / "summary.json").write_text(json.dumps(summary, indent=2))
