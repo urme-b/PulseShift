@@ -1,0 +1,3 @@
+| city | n_test | base_rate | auroc | brier | ece |
+| --- | --- | --- | --- | --- | --- |
+| Seoul | 1632 | 0.116 | 0.936 | 0.044 | 0.029 |
