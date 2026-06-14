@@ -1,11 +1,9 @@
 """Download and assemble real DC activity, weather, and air-quality series."""
 
-import io
 import zipfile
 import urllib.request
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from . import config
