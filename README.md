@@ -28,9 +28,10 @@ python3 -m venv .venv
 
 ## Usage
 
-Enter the planned conditions — temperature, humidity, air quality, wind, rain, and hour — and the
-app returns a calibrated suppression probability and a recommendation. "Use live DC weather" fills
-the form from the National Weather Service forecast and reports the lowest-risk safe hour for the day.
+Enter the planned conditions — temperature, humidity, air quality, wind, rain, start hour, and the
+weekend and wildfire-smoke toggles — and the app returns a calibrated suppression probability and a
+recommendation. "Use live DC weather" fills the form from the National Weather Service forecast and
+reports the lowest-risk safe hour for the day.
 
 A hard safety rule overrides the model: a heat index of 103°F or higher, or an AQI of 150 or higher,
 is always reported as unsafe.
@@ -57,9 +58,12 @@ Evaluated out-of-time on 2024 (Washington DC, 2022–2024):
 - The unweighted model is well calibrated (Brier 0.022); class-weighting makes it overconfident,
   which post-hoc calibration corrects.
 - Suppression is driven by cold rather than heat, since hot hours coincide with peak summer
-  ridership. During the June 2023 wildfire smoke, ridership fell to 0.76x of normal at AQI 196.
+  ridership. Controlling for weather and season across 1,096 days, a 50-point AQI increase is
+  associated with a 5.6-point drop in the daily ride ratio (95% CI 1.1 to 10.9); during the June 2023
+  wildfire smoke, ridership fell to 0.76x of normal at AQI 196.
 - A safety-constrained time-shift policy recovers up to about 36% of otherwise-lost activity, an
   upper bound under perfect demand transfer.
+- The same pipeline applied to a second city, Seoul, reaches AUROC 0.87 on a random hold-out.
 
 The full write-up, figures, and confidence intervals are in `paper/paper.md`.
 
