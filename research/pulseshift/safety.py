@@ -1,7 +1,5 @@
 """Audit that recommendations never raise exposure."""
 
-import numpy as np
-
 from . import config
 
 
