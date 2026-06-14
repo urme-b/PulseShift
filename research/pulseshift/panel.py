@@ -7,11 +7,13 @@ from .features import add_temporal, heat_index_f
 
 
 def _expected_rides(df, value="rides_total"):
-    """Train-fit diurnal/seasonal shape, rescaled to each year's volume."""
+    """Train-fit shape and volume level; test years carry the last train year (leak-free)."""
     keys = ["season", "daytype", "hour"]
     train = df[df["year"].isin(config.TRAIN_YEARS)]
     shape = train.groupby(keys)[value].median().reindex(pd.MultiIndex.from_frame(df[keys])).to_numpy()
-    level = (df.groupby("year")[value].transform("mean") / train[value].mean()).to_numpy()
+    year_level = train.groupby("year")[value].mean() / train[value].mean()
+    last_train = year_level.loc[max(config.TRAIN_YEARS)]
+    level = df["year"].map(lambda y: year_level.get(y, last_train)).to_numpy()
     return shape * level
 
 
