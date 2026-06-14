@@ -72,7 +72,7 @@ def main():
     yt = test["suppressed"].to_numpy()
     ci = {
         "auroc": bootstrap_ci(yt, p_unw, roc_auc_score, require_two_classes=True),
-        "auprc": bootstrap_ci(yt, p_unw, average_precision_score),
+        "auprc": bootstrap_ci(yt, p_unw, average_precision_score, require_two_classes=True),
         "brier": bootstrap_ci(yt, p_unw, brier_score_loss),
         "ece": bootstrap_ci(yt, p_unw, lambda y, p: expected_calibration_error(np.asarray(y), np.asarray(p))),
     }
@@ -81,8 +81,10 @@ def main():
         "served_ci",
     )
 
+    # coefficients of the served model (unweighted, all data) — matches model.json
+    served = fit_logistic(work, balanced=False)
     coef = pd.DataFrame(
-        {"feature": MODEL_FEATURES, "coefficient": logit_unw.named_steps["clf"].coef_[0]}
+        {"feature": MODEL_FEATURES, "coefficient": served.named_steps["clf"].coef_[0]}
     ).sort_values("coefficient", key=abs, ascending=False)
     _write_table(coef, "logistic_coefficients")
     _write_table(_exposure_table(work), "exposure_response")
@@ -94,21 +96,22 @@ def main():
         "decision_curve",
     )
 
-    # cost-sensitive operating point: threshold maximizing net benefit
-    grid = np.linspace(0.02, 0.6, 59)
-    nbm, _ = decision.net_benefit(test["suppressed"], p_unw, grid)
-    best_t = float(grid[int(np.argmax(nbm))])
-    flag = p_unw >= best_t
-    tn, fp, fn, tp = confusion_matrix(yt, flag).ravel()
-    cost = {
-        "best_threshold": round(best_t, 3),
-        "implied_cost_ratio": round(best_t / (1 - best_t), 3),
-        "net_benefit": round(float(np.max(nbm)), 4),
-        "sensitivity": round(tp / (tp + fn), 3),
-        "specificity": round(tn / (tn + fp), 3),
-        "flagged_share": round(float(flag.mean()), 3),
-    }
-    _write_table(pd.DataFrame([cost]), "cost_threshold")
+    # operating points at explicit cost ratios (a missed suppression vs an unnecessary shift).
+    # net benefit is maximized at the lowest thresholds, so we pick thresholds from stated costs:
+    # threshold = 1 / (1 + cost_ratio).
+    cost_rows = []
+    for ratio in (5, 10, 20):
+        t = 1 / (1 + ratio)
+        flag = p_unw >= t
+        tn, fp, fn, tp = confusion_matrix(yt, flag).ravel()
+        cost_rows.append({
+            "cost_ratio_miss_to_flag": ratio,
+            "threshold": round(t, 3),
+            "sensitivity": round(tp / (tp + fn), 3),
+            "specificity": round(tn / (tn + fp), 3),
+            "flagged_share": round(float(flag.mean()), 3),
+        })
+    _write_table(pd.DataFrame(cost_rows), "cost_threshold")
 
     plots.reliability_plot(test["suppressed"].to_numpy(), p_bal, p_unw)
     plots.roc_plot(
@@ -225,7 +228,7 @@ def main():
         "safety": audit,
         "smoke_event": smoke_context,
         "event_study": event_study,
-        "cost_threshold": cost,
+        "cost_threshold": cost_rows,
         "rider_burden": burden.to_dict(orient="records"),
     }
     (config.TABLES / "summary.json").write_text(json.dumps(summary, indent=2))
