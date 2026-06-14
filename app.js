@@ -12,11 +12,15 @@ function heatIndex(t, rh) {
 
 function features(input) {
   const angle = (2 * Math.PI * input.hour) / 24;
+  const hi = heatIndex(input.temp, input.humidity);
   return {
-    heat_index_f: heatIndex(input.temp, input.humidity),
+    heat_index_f: hi,
+    cold_stress: Math.max(0, 55 - input.temp),
+    heat_stress: Math.max(0, hi - 85),
     aqi: input.aqi,
     humidity: input.humidity,
     wind_mph: input.wind,
+    precip_in: input.precip,
     visibility_mi: input.smoke ? 3 : 10,
     smoke_haze: input.smoke ? 1 : 0,
     hour_sin: Math.sin(angle),
@@ -57,6 +61,7 @@ function read() {
     humidity: Number($("humidity").value),
     aqi: Number($("aqi").value),
     wind: Number($("wind").value),
+    precip: Number($("precip").value),
     hour: Number($("hour").value),
     weekend: $("weekend").checked,
     smoke: $("smoke").checked,
@@ -80,6 +85,21 @@ function update() {
     : `Heat index ${Math.round(hi)}°F · AQI ${input.aqi}`;
 }
 
+function bestSafeHour(periods, aqi) {
+  let best = null;
+  for (const p of periods.slice(0, 24)) {
+    const d = new Date(p.startTime);
+    if (d.getHours() < 6 || d.getHours() > 21) continue;
+    const rh = p.relativeHumidity && p.relativeHumidity.value != null ? p.relativeHumidity.value : 50;
+    const pop = p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value != null ? p.probabilityOfPrecipitation.value : 0;
+    const hi = heatIndex(p.temperature, rh);
+    if (hi >= M.safety.heat_unsafe_f || aqi >= M.safety.aqi_unsafe) continue;
+    const r = risk({ temp: p.temperature, humidity: rh, aqi, wind: parseInt(p.windSpeed, 10) || 0, precip: (pop / 100) * 0.1, hour: d.getHours(), weekend: d.getDay() === 0 || d.getDay() === 6, smoke: false });
+    if (!best || r < best.risk) best = { hour: d.getHours(), risk: r };
+  }
+  return best;
+}
+
 async function liveWeather() {
   const btn = $("live");
   btn.textContent = "Loading…";
@@ -92,6 +112,10 @@ async function liveWeather() {
     $("wind").value = parseInt(now.windSpeed, 10) || $("wind").value;
     btn.textContent = "Live DC weather loaded";
     update();
+    const best = bestSafeHour(hourly.properties.periods, Number($("aqi").value));
+    $("besthour").textContent = best
+      ? `Lowest-risk safe daytime hour ahead: ${String(best.hour).padStart(2, "0")}:00 (~${Math.round(best.risk * 100)}% risk, est.)`
+      : "No safe daytime hour in the forecast window — consider indoors.";
   } catch {
     btn.textContent = "Live weather unavailable — enter manually";
   }
