@@ -41,14 +41,14 @@ for participation.
 
 Washington DC, 2022–2024, tested on a held-out 2024:
 
-- Weather and time of day push forecast AUROC from 0.66 to 0.89.
-- Calibration is what makes it usable. Balanced class weights leave the model overconfident
-  (Brier 0.14); calibration brings it to 0.04 with no loss of accuracy.
+- Weather and time of day push forecast AUROC from 0.69 to 0.92.
+- Calibration is what makes it usable. Balanced class weights leave the model badly overconfident
+  (Brier 0.14, ECE 0.27); the unweighted model the app serves is well-calibrated (Brier 0.023).
 - Cold drives most suppression, not heat — hot and smoky hours fall in summer, when ridership
-  peaks. The June 2023 wildfire smoke is the clean exception: at AQI 196, ridership dropped to
-  0.76× of normal.
-- Shifting sessions to a safer hour recovers up to ~37% of otherwise-lost activity, never pointing
-  at an unsafe hour.
+  peaks, so every exposure term loads negative. The June 2023 wildfire smoke (AQI 196) cut ridership
+  to 0.76× of normal, though several non-smoke days dipped further.
+- Shifting sessions to a safer hour could recover up to ~32% of otherwise-lost activity (an upper
+  bound), never pointing at an unsafe hour.
 
 Full write-up in [`paper/paper.md`](paper/paper.md).
 
