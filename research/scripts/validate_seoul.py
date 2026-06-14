@@ -60,15 +60,14 @@ def main():
     df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
 
     df = df.sort_values("date").reset_index(drop=True)
-    train = df.iloc[: int(len(df) * 0.75)]
-    shape = train.groupby(["season", "daytype", "hour"])["rides"].median()
+    df["is_train"] = df.index < int(len(df) * 0.75)   # split once, before fitting climatology
+    shape = df[df["is_train"]].groupby(["season", "daytype", "hour"])["rides"].median()
     df["expected"] = shape.reindex(pd.MultiIndex.from_frame(df[["season", "daytype", "hour"]])).to_numpy()
     df = df.dropna(subset=["expected"])
     df = df[df["expected"] >= config.EXPECTED_FLOOR].reset_index(drop=True)
     df["suppressed"] = (df["rides"] < config.SUPPRESSION_RATIO * df["expected"]).astype(int)
 
-    cut = int(len(df) * 0.75)
-    tr, te = df.iloc[:cut], df.iloc[cut:]
+    tr, te = df[df["is_train"]], df[~df["is_train"]]
     model = Pipeline([("scale", StandardScaler()), ("clf", LogisticRegression(max_iter=2000))])
     model.fit(tr[FEATURES], tr["suppressed"])
     p = model.predict_proba(te[FEATURES])[:, 1]
