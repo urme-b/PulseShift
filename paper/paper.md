@@ -19,10 +19,11 @@ features lift AUROC from 0.69 to 0.94 (95% CI 0.92–0.95); gradient boosting do
 logistic model on AUROC, confirming the minimal model suffices. Calibration is decisive: balanced
 class weights make the model badly over-confident (Brier 0.130, ECE 0.255), while the unweighted
 model we serve is well-calibrated (Brier 0.022, ECE 0.046). With precipitation and a cold-stress
-term, the model recovers correctly-signed drivers (rain +0.54, cold +0.53 increase suppression),
-though heat still loads negative through seasonal confounding. Holding weather and season fixed,
-each +50 AQI is associated with a 5.6-point drop in the daily ride ratio (95% CI 1.1–10.9), and the
-framework transfers to Seoul (AUROC 0.94). A safety-constrained time-shift policy could recover up to
+term, the served model recovers correctly-signed drivers (rain +0.40, cold +0.55 increase
+suppression), though heat still loads negative through seasonal confounding. Holding temperature,
+precipitation, and season fixed, each +50 AQI is associated with a 5.6-point drop in the daily ride
+ratio (95% CI 1.1–10.9), and the framework transfers to a second city, Seoul (AUROC 0.95 on a small
+held-out tail). A safety-constrained time-shift policy could recover up to
 ~36% (95% CI 33–40%) of otherwise-lost activity while never recommending an unsafe hour; discretionary
 riders bear ~1.9× the burden of committed riders. **Conclusion.** A minimal but calibrated,
 safety-aware framework turns climate exposure into a usable, reproducible activity-retention decision;
@@ -142,7 +143,7 @@ weekend, and season across all 1,096 days, and bootstrap the AQI coefficient ove
 to the lowest-risk hour within ±3 hours, under a hard safety envelope (heat index < 103 °F, AQI < 150)
 and a minimum-benefit rule. RAM = `E_t·(risk_keep − risk_chosen)` summed over hours, an **upper
 bound** (assumes full demand transfer, uncapped target-hour capacity). We also report the
-net-benefit-maximizing decision threshold and its implied cost ratio. We audit that no recommendation
+model's operating characteristics (sensitivity, specificity) at explicit cost ratios. We audit that no recommendation
 falls in unsafe conditions, stratify by season and day type, report burden by rider type, and
 externally validate the whole framework on the Seoul Bike dataset.
 
@@ -160,14 +161,14 @@ The panel holds 26,288 city-hours (2022–2024); 24,354 clear the activity floor
 | Logistic (unweighted, served) | 0.94 | 0.48 | 0.022 | 0.046 | 1.05 / −1.51 |
 | Logistic (balanced) | 0.94 | 0.45 | 0.130 | 0.255 | 0.69 / −3.84 |
 | Logistic (balanced) + calibration | 0.94 | 0.46 | 0.029 | 0.065 | 1.19 / −1.82 |
-| Gradient boosting | 0.94 | 0.52 | 0.025 | 0.046 | 0.98 / −1.75 |
+| Gradient boosting | 0.93 | 0.52 | 0.025 | 0.046 | 0.98 / −1.75 |
 
 *Test year 2024, n = 8,204. Served-model 95% CIs: AUROC 0.92–0.95, AUPRC 0.41–0.56,
 Brier 0.020–0.024, ECE 0.043–0.049.*
 
 Environmental and temporal features lift AUROC from 0.69 (season-aware baseline) to 0.94 (Figure
 `roc`). Gradient
-boosting matches the logistic model on AUROC (both 0.94; it edges AUPRC, 0.52 vs 0.48), confirming
+boosting does not beat the logistic model on AUROC (0.93 vs 0.94; it edges AUPRC, 0.52 vs 0.48), confirming
 the minimal model captures the signal. But discrimination is not the point of a decision tool.
 Fitting with **balanced class weights** — a common default for imbalance — discriminates well yet is
 badly **over-confident**: Brier 0.130 (worse than the baseline's 0.027), ECE 0.255, calibration
@@ -175,18 +176,20 @@ intercept −3.84. The **unweighted** model we serve avoids this (Brier 0.022, E
 and post-hoc isotonic calibration also repairs the balanced model (ECE 0.255 → 0.065) (Figure
 `reliability`). Calibration — by weighting choice or post hoc — is what makes the risk usable [7, 9].
 The decision curve (Figure and Table `decision_curve`) shows positive net benefit across low-to-
-moderate thresholds [8]; the net-benefit-maximizing threshold is low (~0.02, Table `cost_threshold`),
-reflecting that a precautionary adaptation is far cheaper than a lost session (sensitivity 0.98,
-specificity 0.49 at that point).
+moderate thresholds [8]. Net benefit is maximized at the lowest thresholds (no interior optimum), so
+we report operating points at explicit cost ratios (Table `cost_threshold`): treating a missed
+suppression as 10× costlier than an unnecessary shift sets the threshold at 0.09, flagging 21% of
+hours at sensitivity 0.89 and specificity 0.81.
 
 ### 6.2 What actually suppresses activity
 
 Marginal exposure–response is **confounded by season** (Figure and Table `exposure_response`):
 suppression falls from ~17% in the coldest hours to near zero above 90 °F, because hot hours coincide
 with summer's activity peak. Cold, not heat, is the dominant suppressor in this temperate city.
-Adding precipitation and a cold-stress hinge recovers **correctly-signed drivers** — rain (+0.54) and
-cold (+0.53) raise suppression — while heat loads negative (heat index −0.66, heat-stress −0.73)
-through seasonal confounding (Table `logistic_coefficients`); all coefficients are associational.
+Adding precipitation and a cold-stress hinge recovers **correctly-signed drivers**: in the served
+model (Table `logistic_coefficients`), rain (+0.40) and cold (+0.55) raise suppression, while heat
+loads negative (heat index −0.66, heat-stress −0.80) and the daily-AQI term is near zero (−0.04) —
+all reflecting seasonal confounding. The coefficients are associational, not causal.
 
 For the air-quality arm we go beyond the single episode. Controlling for temperature, precipitation,
 season, and weekend across all 1,096 days, **each +50 AQI is associated with a 5.6-percentage-point
@@ -212,7 +215,8 @@ in the colder months, when suppression is most common (Figure `ram_by_month`).
 Results are stable to the label threshold (Table `label_sensitivity`): across `rho` ∈ {0.4, 0.5, 0.6}
 the base rate moves from 3.8% to 8.9% while AUROC stays 0.92–0.95 and ECE ≤ 0.07. Performance holds
 across seasons (AUROC 0.90–0.96) and day types. **External validity:** applying the same framework to
-the Seoul Bike dataset (a different climate and hemisphere) yields AUROC 0.94 on a held-out tail
+the Seoul Bike dataset (a different climate and hemisphere) yields AUROC 0.95 on a small leak-free
+held-out tail (n = 180; calibration is weaker on this short, high-suppression autumn window, ECE 0.12)
 (Table `seoul_validation`). **Equity:** over the full panel, casual (discretionary) riders are
 suppressed 9.5% of active hours versus 5.1% for members (≈1.9×) — the more committed the activity,
 the more it survives adverse conditions, which is exactly the population for whom adaptation support
