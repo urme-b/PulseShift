@@ -59,8 +59,10 @@ def main():
     df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
     df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
 
-    df = df.sort_values("date").reset_index(drop=True)
-    df["is_train"] = df.index < int(len(df) * 0.75)   # split once, before fitting climatology
+    # cross-city check of the method: a random 75/25 hold-out (a chronological tail on one
+    # year would put an entire unseen season in the test set). Split once, before climatology.
+    df = df.sample(frac=1, random_state=0).reset_index(drop=True)
+    df["is_train"] = df.index < int(len(df) * 0.75)
     shape = df[df["is_train"]].groupby(["season", "daytype", "hour"])["rides"].median()
     df["expected"] = shape.reindex(pd.MultiIndex.from_frame(df[["season", "daytype", "hour"]])).to_numpy()
     df = df.dropna(subset=["expected"])
