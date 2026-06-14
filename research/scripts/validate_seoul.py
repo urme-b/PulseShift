@@ -1,0 +1,89 @@
+"""External validation on a second city: Seoul Bike Sharing (UCI #560)."""
+
+import urllib.request
+import zipfile
+
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from pulseshift import config
+from pulseshift.evaluation import metrics
+from pulseshift.features import heat_index_f
+
+URL = "https://archive.ics.uci.edu/static/public/560/seoul+bike+sharing+demand.zip"
+FEATURES = ["heat_index_f", "cold_stress", "heat_stress", "humidity", "wind_mph",
+            "precip_in", "visibility_mi", "hour_sin", "hour_cos", "is_weekend"]
+
+
+def _load():
+    path = config.RAW / "seoul.zip"
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        req = urllib.request.Request(URL, headers={"User-Agent": "pulseshift-research/1.0"})
+        path.write_bytes(urllib.request.urlopen(req, timeout=120).read())
+    with zipfile.ZipFile(path) as z:
+        name = [n for n in z.namelist() if n.lower().endswith(".csv")][0]
+        return pd.read_csv(z.open(name), encoding="latin-1")
+
+
+def main():
+    df = _load()
+    rename = {}
+    for c in df.columns:
+        cl = c.strip().lower()
+        for key, std in [("rented", "rides"), ("temperature", "temp_c"), ("humidity", "humidity"),
+                         ("wind", "wind_ms"), ("visibility", "visibility"), ("rainfall", "rain_mm"),
+                         ("seasons", "season"), ("functioning", "functioning")]:
+            if cl.startswith(key):
+                rename[c] = std
+        if cl == "hour":
+            rename[c] = "hour"
+        if cl == "date":
+            rename[c] = "date"
+    df = df.rename(columns=rename)
+    df = df[df["functioning"] == "Yes"].copy()
+
+    df["date"] = pd.to_datetime(df["date"], dayfirst=True)
+    df["is_weekend"] = (df["date"].dt.dayofweek >= 5).astype(int)
+    df["daytype"] = np.where(df["is_weekend"] == 1, "weekend", "weekday")
+    df["temp_f"] = df["temp_c"] * 9 / 5 + 32
+    df["heat_index_f"] = heat_index_f(df["temp_f"], df["humidity"])
+    df["cold_stress"] = (55 - df["temp_f"]).clip(lower=0)
+    df["heat_stress"] = (df["heat_index_f"] - 85).clip(lower=0)
+    df["wind_mph"] = df["wind_ms"] * 2.237
+    df["precip_in"] = df["rain_mm"] / 25.4
+    df["visibility_mi"] = df["visibility"] * 10 / 1609
+    df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
+    df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
+
+    df = df.sort_values("date").reset_index(drop=True)
+    train = df.iloc[: int(len(df) * 0.75)]
+    shape = train.groupby(["season", "daytype", "hour"])["rides"].median()
+    df["expected"] = shape.reindex(pd.MultiIndex.from_frame(df[["season", "daytype", "hour"]])).to_numpy()
+    df = df.dropna(subset=["expected"])
+    df = df[df["expected"] >= config.EXPECTED_FLOOR].reset_index(drop=True)
+    df["suppressed"] = (df["rides"] < config.SUPPRESSION_RATIO * df["expected"]).astype(int)
+
+    cut = int(len(df) * 0.75)
+    tr, te = df.iloc[:cut], df.iloc[cut:]
+    model = Pipeline([("scale", StandardScaler()), ("clf", LogisticRegression(max_iter=2000))])
+    model.fit(tr[FEATURES], tr["suppressed"])
+    p = model.predict_proba(te[FEATURES])[:, 1]
+    m = metrics(te["suppressed"], p)
+
+    row = pd.DataFrame([{"city": "Seoul", "n_test": m["n"], "base_rate": round(m["base_rate"], 3),
+                         "auroc": round(m["auroc"], 3), "brier": round(m["brier"], 3),
+                         "ece": round(m["ece"], 3)}])
+    config.TABLES.mkdir(parents=True, exist_ok=True)
+    row.to_csv(config.TABLES / "seoul_validation.csv", index=False)
+    header = "| " + " | ".join(row.columns) + " |\n| " + " | ".join("---" for _ in row.columns) + " |\n"
+    body = "| " + " | ".join(str(v) for v in row.iloc[0]) + " |\n"
+    (config.TABLES / "seoul_validation.md").write_text(header + body)
+    print(row.to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()
