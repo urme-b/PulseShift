@@ -7,3 +7,15 @@ __pycache__/
 .ipynb_checkpoints/
 research/data/raw/
 research/data/interim/
+
+# secrets / credentials — never commit
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+secrets.*
+*.local
