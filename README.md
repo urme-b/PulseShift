@@ -1,71 +1,63 @@
 # PulseShift
 
-PulseShift estimates whether weather and air quality will suppress a planned outdoor activity
-session, and recommends the safest way to keep it. It ships as a single static web page that runs a
-calibrated model in the browser, backed by a reproducible Python pipeline and a written analysis.
+PulseShift forecasts whether weather and air quality will suppress a planned outdoor session, and
+recommends the safest way to keep it. It is a single static web page that runs a calibrated model in
+the browser, backed by a reproducible Python pipeline and a written analysis on three years of real
+Washington DC data.
 
 Live demo: https://urme-b.github.io/PulseShift/
 
-## Requirements
+## What it does
 
-- A modern web browser, to run the app.
-- Python 3.9 or newer, to reproduce the analysis or retrain the model.
-
-## Installation
-
-The app needs no installation. Open `index.html` directly, or serve the directory:
-
-```
-python3 -m http.server 8000
-```
-
-For the research pipeline:
-
-```
-python3 -m venv .venv
-.venv/bin/pip install -r research/requirements.txt
-```
-
-## Usage
-
-Enter the planned conditions — temperature, humidity, air quality, wind, rain, start hour, and the
-weekend and wildfire-smoke toggles — and the app returns a calibrated suppression probability and a
-recommendation. "Use live DC weather" fills the form from the National Weather Service forecast and
-reports the lowest-risk safe hour for the day.
-
-A hard safety rule overrides the model: a heat index of 103°F or higher, or an AQI of 150 or higher,
-is always reported as unsafe.
-
-## Configuration
-
-No configuration, API keys, or environment variables are required; the app calls only the public,
-keyless National Weather Service API. Analysis parameters — study years, weather station, and
-label/safety thresholds — are defined in `research/pulseshift/config.py`.
-
-## How it works
-
-A logistic regression predicts whether an hour of outdoor cycling is suppressed, defined as ridership
-below half of a weather-free seasonal and diurnal baseline. The features are heat index, AQI,
-humidity, wind, precipitation, two temperature hinge terms, visibility, a smoke flag, and a cyclical
-encoding of hour and weekend. The model is trained in Python and exported to `model.js` as plain
-coefficients; the page standardizes the inputs and applies them directly.
+You give it the conditions for a planned session; it returns a calibrated probability that the
+session will be lost to the weather, and a recommendation. A hard safety rule sits above the model:
+a heat index of 103°F or higher, or an AQI of 150 or higher, is always flagged unsafe, so the tool
+never trades safety for participation. With the live forecast it also reports the lowest-risk safe
+hour for the day.
 
 ## Results
 
-Evaluated out-of-time on 2024 (Washington DC, 2022–2024):
+Trained on Washington DC, 2022–2024, and evaluated out-of-time on a held-out 2024.
 
-- Forecast AUROC of 0.94; gradient boosting does not improve on it.
-- The unweighted model is well calibrated (Brier 0.022); class-weighting makes it overconfident,
-  which post-hoc calibration corrects.
-- Suppression is driven by cold rather than heat, since hot hours coincide with peak summer
-  ridership. Controlling for weather and season across 1,096 days, a 50-point AQI increase is
-  associated with a 5.6-point drop in the daily ride ratio (95% CI 1.1 to 10.9); during the June 2023
-  wildfire smoke, ridership fell to 0.76x of normal at AQI 196.
-- A safety-constrained time-shift policy recovers up to about 36% of otherwise-lost activity, an
-  upper bound under perfect demand transfer.
-- The same pipeline applied to a second city, Seoul, reaches AUROC 0.87 on a random hold-out.
+Calibration, not raw accuracy, is what makes a forecast usable. Class-weighting the model leaves it
+badly overconfident; the unweighted model the app serves stays on the diagonal.
 
-The full write-up, figures, and confidence intervals are in `paper/paper.md`.
+<img src="paper/figures/reliability.png" alt="Reliability diagram: served model tracks the ideal line; the balanced model is overconfident" width="440">
+
+Cold drives most suppression here, not heat, because hot and smoky hours fall in peak summer
+ridership. The June 2023 Canadian-wildfire smoke is the clean exception: at AQI 196, ridership fell
+to 0.76x of normal.
+
+<img src="paper/figures/smoke_event.png" alt="June 2023 wildfire smoke: AQI spikes to 196 as hourly ridership drops" width="680">
+
+- Forecast AUROC rises from 0.69 (a season-aware baseline) to 0.94; gradient boosting does not beat it.
+- The served model is well calibrated out-of-time (Brier 0.022).
+- Controlling for weather and season across 1,096 days, a 50-point AQI increase is associated with a
+  5.6-point drop in the daily ride ratio (95% CI 1.1 to 10.9).
+- A safety-constrained time-shift policy recovers up to ~36% of otherwise-lost activity (an upper bound).
+- The same pipeline reaches AUROC 0.87 on a second city, Seoul.
+
+Full write-up, figures, and confidence intervals: [`paper/paper.md`](paper/paper.md).
+
+## How it works
+
+A logistic regression predicts whether an hour of outdoor cycling is suppressed — ridership below
+half of a weather-free seasonal and diurnal baseline, fit only on the training years to keep the
+test honest. Features are heat index, AQI, humidity, wind, precipitation, two temperature hinge
+terms, visibility, a smoke flag, and a cyclical encoding of hour and weekend. The model is trained
+in Python and exported to `model.js` as twelve coefficients; the page standardizes the inputs and
+applies them directly, so inference is a dot product through a sigmoid — no server, no build step,
+no keys.
+
+## Tech stack
+
+| Layer | Choice |
+| --- | --- |
+| App | Vanilla HTML, CSS, and JavaScript — zero dependencies, static-hostable |
+| Model | scikit-learn logistic regression, exported to JSON and run in the browser |
+| Pipeline | Python, pandas, scikit-learn, scipy, matplotlib |
+| Data | Capital Bikeshare, NOAA Local Climatological Data, EPA AirData (all public) |
+| Quality | pytest, GitHub Actions CI, bootstrap confidence intervals, decision-curve analysis |
 
 ## Repository layout
 
@@ -77,26 +69,27 @@ research/scripts/                                       build_data, run_analysis
 research/tests/                                         test suite
 ```
 
-## Development
-
-Reproduce the dataset, analysis, and model from public data:
+## Reproduce
 
 ```
+python3 -m venv .venv
+.venv/bin/pip install -r research/requirements.txt
 cd research
-PYTHONPATH=. ../.venv/bin/python scripts/build_data.py
-PYTHONPATH=. ../.venv/bin/python scripts/run_analysis.py
-PYTHONPATH=. ../.venv/bin/python scripts/train_model.py
-PYTHONPATH=. ../.venv/bin/pytest tests/ -q
+PYTHONPATH=. ../.venv/bin/python scripts/build_data.py     # download public data, build the panel
+PYTHONPATH=. ../.venv/bin/python scripts/run_analysis.py   # figures and tables
+PYTHONPATH=. ../.venv/bin/python scripts/train_model.py    # export the served model
+PYTHONPATH=. ../.venv/bin/pytest tests/ -q                 # tests
 ```
 
-Tests also run in CI on every push. See `research/README.md` for pipeline details.
+The processed dataset is committed, so analysis and tests run without re-downloading. Every figure
+and table is regenerated deterministically.
 
 ## Limitations
 
 The suppression outcome is a constructed proxy from ridership, not recorded skipped sessions. The
-study covers one city and one activity, air quality is measured daily, and the recovered-activity
-figure is a model-based upper bound. These are detailed in the paper.
+study covers one city and one activity, air quality is daily, and the recovered-activity figure is a
+model-based upper bound. These are discussed in the paper.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [LICENSE](LICENSE).
