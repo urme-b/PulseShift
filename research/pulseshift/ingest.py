@@ -80,6 +80,7 @@ def load_weather():
         "HourlyDewPointTemperature",
         "HourlyWindSpeed",
         "HourlyVisibility",
+        "HourlyPrecipitation",
         "HourlyPresentWeatherType",
     ]
     frames = []
@@ -99,8 +100,11 @@ def load_weather():
     lcd["smoke_haze"] = (
         lcd["HourlyPresentWeatherType"].astype(str).str.contains("HZ|FU|smoke|haze", case=False, na=False)
     ).astype(int)
-    for col in cols[1:6]:
+    for col in ["HourlyDryBulbTemperature", "HourlyRelativeHumidity", "HourlyDewPointTemperature",
+                "HourlyWindSpeed", "HourlyVisibility"]:
         lcd[col] = _to_numeric(lcd[col])
+    # precipitation: trace/blank read as 0
+    lcd["HourlyPrecipitation"] = _to_numeric(lcd["HourlyPrecipitation"]).fillna(0)
 
     lcd["hour"] = lcd["ts_utc"].dt.floor("h")
     hourly = (
@@ -112,6 +116,7 @@ def load_weather():
             dewpoint_f=("HourlyDewPointTemperature", "mean"),
             wind_mph=("HourlyWindSpeed", "mean"),
             visibility_mi=("HourlyVisibility", "mean"),
+            precip_in=("HourlyPrecipitation", "max"),
             smoke_haze=("smoke_haze", "max"),
         )
         .reset_index()

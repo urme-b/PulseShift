@@ -44,6 +44,9 @@ def build_panel(write=True):
     panel = add_temporal(panel)
     panel["is_weekend"] = (panel["daytype"] == "weekend").astype(int)
     panel["heat_index_f"] = heat_index_f(panel["temp_f"], panel["humidity"])
+    panel["precip_in"] = panel["precip_in"].fillna(0)
+    panel["cold_stress"] = (55.0 - panel["temp_f"]).clip(lower=0)
+    panel["heat_stress"] = (panel["heat_index_f"] - 85.0).clip(lower=0)
     panel = panel.dropna(subset=["temp_f", "humidity", "aqi"]).reset_index(drop=True)
 
     panel["expected_rides"] = _expected_rides(panel)

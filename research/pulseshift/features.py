@@ -46,9 +46,12 @@ def add_temporal(df, ts_col="ts_local"):
 
 MODEL_FEATURES = [
     "heat_index_f",
+    "cold_stress",
+    "heat_stress",
     "aqi",
     "humidity",
     "wind_mph",
+    "precip_in",
     "visibility_mi",
     "smoke_haze",
     "hour_sin",
