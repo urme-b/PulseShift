@@ -1,6 +1,7 @@
 """Fit the serving model and export it for the browser app."""
 
 import json
+import subprocess
 
 from sklearn.metrics import brier_score_loss, roc_auc_score
 
@@ -8,6 +9,15 @@ from pulseshift import config
 from pulseshift.features import MODEL_FEATURES
 from pulseshift.models import fit_logistic, predict, temporal_split
 from pulseshift.panel import active, load_panel
+
+
+def _git_commit():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=str(config.ROOT.parent)
+        ).decode().strip()
+    except Exception:
+        return "unknown"
 
 
 def main():
@@ -29,6 +39,8 @@ def main():
         "intercept": float(clf.intercept_[0]),
         "safety": {"heat_unsafe_f": config.HEAT_UNSAFE_F, "aqi_unsafe": config.AQI_UNSAFE},
         "meta": {
+            "model_version": "1.1.0",
+            "git_commit": _git_commit(),
             "trained_on": "Washington DC, Capital Bikeshare + NOAA + EPA, 2022-2024",
             "active_hours": int(len(work)),
             "auroc_2024": round(float(roc_auc_score(test["suppressed"], p)), 3),
