@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use PulseShift, please cite it as below."
+type: software
+title: "PulseShift: Organizer-First Decision Support for Outdoor Activity Planning Under Climate Stress"
+version: 0.1.0
+date-released: 2026-06-15
+url: "https://github.com/urme-b/PulseShift"
+repository-code: "https://github.com/urme-b/PulseShift"
+license: MIT
+authors:
+  - family-names: Bose
+    given-names: Urme
+    alias: urme-b
+keywords:
+  - decision-support
+  - climate
+  - heat-stress
+  - air-quality
+  - noaa
+  - airnow
+  - weather
+  - public-health
+abstract: >-
+  PulseShift is an organizer-first decision-support tool for planning
+  outdoor activities under climate stress. It combines NOAA weather
+  forecasts and EPA AirNow air-quality (AQI) data to rank safer
+  scheduling and adaptation options, with an evaluation covering
+  decision-curve analysis, exposure-response modeling, and equity
+  across day types and seasons.
