@@ -1,0 +1,19 @@
+{
+  "upload_type": "software",
+  "title": "PulseShift: Organizer-First Decision Support for Outdoor Activity Planning Under Climate Stress",
+  "description": "Combines NOAA forecasts and EPA AirNow air-quality data to rank safer scheduling and adaptation options, evaluated with decision-curve analysis, exposure-response modeling, and equity across day types and seasons.",
+  "creators": [
+    { "name": "Bose, Urme" }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": [
+    "decision-support",
+    "climate",
+    "heat-stress",
+    "air-quality",
+    "noaa",
+    "airnow",
+    "public-health"
+  ]
+}
