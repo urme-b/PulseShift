@@ -1,9 +1,5 @@
 # PulseShift
 
-[![CI](https://github.com/urme-b/PulseShift/actions/workflows/ci.yml/badge.svg)](https://github.com/urme-b/PulseShift/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](research/requirements.txt)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
 PulseShift forecasts whether weather and air quality will suppress a planned outdoor session, and
 recommends the safest way to keep it. It is a single static web page that runs a calibrated model in
 the browser, backed by a reproducible Python pipeline and a written analysis on three years of real
